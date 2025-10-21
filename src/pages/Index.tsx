@@ -59,13 +59,13 @@ const Index = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/register">
-                <Button size="lg" className="bg-primary-foreground text-primary hover:bg-primary-foreground/50 shadow-lg">
+                <Button size="lg" className="bg-primary-foreground text-primary hover:bg-primary-foreground/70 shadow-lg">
                   Daftar Sekarang
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>
               <Link to="/informasi">
-                <Button size="lg" variant="link" className="bg-primary-foreground text-primary hover:bg-primary-foreground/50 shadow-lg">
+                <Button size="lg" variant="link" className="bg-primary-foreground text-primary hover:bg-primary-foreground/70 shadow-lg">
                   Informasi Lengkap
                 </Button>
               </Link>
