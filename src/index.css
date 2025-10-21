@@ -2,6 +2,61 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    /* PPDB MTsN 1 Way Kanan Color System */
+    --primary: 120 100% 19.6%; /* #006400 - Dark Green */
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 120 61% 34%; /* #228B22 - Forest Green */
+    --secondary-foreground: 0 0% 100%;
+    
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+    
+    --muted: 220 9% 46%;
+    --muted-foreground: 220 9% 46%;
+    
+    --accent: 120 61% 50%;
+    --accent-foreground: 0 0% 100%;
+    
+    --success: 142 76% 36%;
+    --warning: 38 92% 50%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 120 100% 19.6%;
+    
+    --radius: 0.5rem;
+  }
+}
+
+@layer components {
+  .container-custom {
+    @apply container mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  .section-padding {
+    @apply py-12 md:py-16 lg:py-20;
+  }
+  
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 transition-colors;
+  }
+  
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/90 transition-colors;
+  }
+}
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */
