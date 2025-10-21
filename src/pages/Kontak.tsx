@@ -8,7 +8,7 @@ const Kontak = () => {
     {
       icon: MapPin,
       title: 'Alamat',
-      content: 'Jl. Raya Way Kanan, Kecamatan Blambangan Umpu, Kabupaten Way Kanan, Lampung 34771',
+      content: 'Jl. Lintas Sumatera, Blambangan Umpu, Kabupaten Way Kanan, Lampung. 34771',
     },
     {
       icon: Phone,
@@ -130,7 +130,7 @@ const Kontak = () => {
               <Card className="overflow-hidden h-full">
                 <CardContent className="p-0 h-full min-h-[500px]">
                   <iframe
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d127343.89313307266!2d104.57000000000001!3d-4.8400000000000005!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e3b7e5e1e1e1e1e%3A0x1e1e1e1e1e1e1e1e!2sWay%20Kanan%2C%20Lampung!5e0!3m2!1sid!2sid!4v1234567890123!5m2!1sid!2sid"
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3976.3204527473085!2d104.45607199999999!3d-4.714288600000001!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e388fc3f5966b99%3A0x8593780b9de1bc7d!2sMTsN%201%20Way%20Kanan!5e0!3m2!1sid!2sid!4v1761052197253!5m2!1sid!2sid"
                     width="100%"
                     height="100%"
                     style={{ border: 0 }}
