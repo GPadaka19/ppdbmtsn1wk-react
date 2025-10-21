@@ -73,7 +73,7 @@ const Kontak = () => {
                 <h2 className="text-3xl font-bold text-foreground mb-2">
                   MTsN 1 Way Kanan
                 </h2>
-                <p className="text-muted text-lg">
+                <p className="text-foreground text-lg">
                   Madrasah Tsanawiyah Negeri terbaik di Way Kanan
                 </p>
               </div>
@@ -91,12 +91,12 @@ const Kontak = () => {
                           {contact.href ? (
                             <a
                               href={contact.href}
-                              className="text-muted hover:text-primary transition-colors"
+                              className="text-foreground hover:text-primary transition-colors"
                             >
                               {contact.content}
                             </a>
                           ) : (
-                            <p className="text-muted">{contact.content}</p>
+                            <p className="text-foreground">{contact.content}</p>
                           )}
                         </div>
                       </div>
@@ -156,7 +156,7 @@ const Kontak = () => {
                   <h3 className="font-bold text-foreground mb-2">
                     Kapan batas akhir pendaftaran?
                   </h3>
-                  <p className="text-muted">
+                  <p className="text-foreground">
                     Pendaftaran ditutup pada tanggal 31 Januari 2025 pukul 23:59 WIB.
                   </p>
                 </CardContent>
@@ -167,7 +167,7 @@ const Kontak = () => {
                   <h3 className="font-bold text-foreground mb-2">
                     Berapa biaya pendaftaran?
                   </h3>
-                  <p className="text-muted">
+                  <p className="text-foreground">
                     Pendaftaran PPDB MTsN 1 Way Kanan adalah GRATIS, tidak dipungut biaya apapun.
                   </p>
                 </CardContent>
@@ -178,7 +178,7 @@ const Kontak = () => {
                   <h3 className="font-bold text-foreground mb-2">
                     Bagaimana jika lupa password?
                   </h3>
-                  <p className="text-muted">
+                  <p className="text-foreground">
                     Anda dapat menghubungi admin via WhatsApp atau email untuk reset password.
                   </p>
                 </CardContent>
@@ -189,7 +189,7 @@ const Kontak = () => {
                   <h3 className="font-bold text-foreground mb-2">
                     Apakah bisa daftar offline?
                   </h3>
-                  <p className="text-muted">
+                  <p className="text-foreground">
                     Untuk tahun ini, pendaftaran hanya dilakukan secara online melalui website.
                   </p>
                 </CardContent>
