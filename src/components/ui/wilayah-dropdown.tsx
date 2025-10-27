@@ -16,6 +16,11 @@ interface WilayahDropdownProps {
     kelurahan?: string;
   };
   disabled?: boolean;
+  // Error messages
+  errorProvinsi?: string;
+  errorKota?: string;
+  errorKecamatan?: string;
+  errorKelurahan?: string;
 }
 
 const WilayahDropdown: React.FC<WilayahDropdownProps> = ({
@@ -25,7 +30,11 @@ const WilayahDropdown: React.FC<WilayahDropdownProps> = ({
   onKelurahanChange,
   onKodePosChange,
   defaultValues,
-  disabled = false
+  disabled = false,
+  errorProvinsi,
+  errorKota,
+  errorKecamatan,
+  errorKelurahan
 }) => {
   const [provinsiList, setProvinsiList] = useState<Provinsi[]>([]);
   const [kotaList, setKotaList] = useState<Kota[]>([]);
@@ -85,12 +94,7 @@ const WilayahDropdown: React.FC<WilayahDropdownProps> = ({
     }
   }, [selectedKecamatan]);
 
-  // Load kode pos when kelurahan changes
-  useEffect(() => {
-    if (selectedKelurahan) {
-      loadKodePos(selectedKelurahan);
-    }
-  }, [selectedKelurahan]);
+  // Note: Kode pos functionality removed as endpoint is not available
 
   const loadProvinsi = async () => {
     setLoading(prev => ({ ...prev, provinsi: true }));
@@ -141,9 +145,11 @@ const WilayahDropdown: React.FC<WilayahDropdownProps> = ({
   };
 
   const loadKodePos = async (kelurahanId: string) => {
+    // Kode pos functionality not available in current API
+    // This function is kept for future implementation
     try {
-      const data = await wilayahService.getKodePos(parseInt(kelurahanId));
-      onKodePosChange?.(data.kode_pos);
+      // const data = await wilayahService.getKodePos(parseInt(kelurahanId));
+      // onKodePosChange?.(data.kode_pos);
     } catch (error) {
       console.error('Error loading kode pos:', error);
     }
@@ -212,6 +218,7 @@ const WilayahDropdown: React.FC<WilayahDropdownProps> = ({
             ))}
           </SelectContent>
         </Select>
+        {errorProvinsi && <p className="text-sm text-destructive mt-1">{errorProvinsi}</p>}
       </div>
 
       {/* Kota/Kabupaten */}
@@ -233,6 +240,7 @@ const WilayahDropdown: React.FC<WilayahDropdownProps> = ({
             ))}
           </SelectContent>
         </Select>
+        {errorKota && <p className="text-sm text-destructive mt-1">{errorKota}</p>}
       </div>
 
       {/* Kecamatan */}
@@ -254,6 +262,7 @@ const WilayahDropdown: React.FC<WilayahDropdownProps> = ({
             ))}
           </SelectContent>
         </Select>
+        {errorKecamatan && <p className="text-sm text-destructive mt-1">{errorKecamatan}</p>}
       </div>
 
       {/* Kelurahan/Desa */}
@@ -275,6 +284,7 @@ const WilayahDropdown: React.FC<WilayahDropdownProps> = ({
             ))}
           </SelectContent>
         </Select>
+        {errorKelurahan && <p className="text-sm text-destructive mt-1">{errorKelurahan}</p>}
       </div>
     </div>
   );
