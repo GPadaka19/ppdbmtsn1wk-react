@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import WilayahDropdown from '@/components/ui/wilayah-dropdown';
+import WilayahDropdown from '@/components/ui/wilayah-dropdown-autocomplete';
 import { PendaftaranData } from '@/services/pendaftaranService';
 import { Provinsi, Kota, Kecamatan, Kelurahan } from '@/services/wilayahService';
 
