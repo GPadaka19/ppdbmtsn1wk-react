@@ -81,9 +81,10 @@ const Step2Alamat = ({ data, onNext, onPrev }: Props) => {
     }
   };
 
-  const handleKodePosChange = (kodePos: string) => {
-    setValue('kode_pos', kodePos);
-  };
+  // Note: Kode pos auto-fill disabled as API endpoint not available
+  // const handleKodePosChange = (kodePos: string) => {
+  //   setValue('kode_pos', kodePos);
+  // };
 
   return (
     <form onSubmit={handleSubmit(onNext)} className="space-y-4">
@@ -112,7 +113,11 @@ const Step2Alamat = ({ data, onNext, onPrev }: Props) => {
         onKotaChange={handleKotaChange}
         onKecamatanChange={handleKecamatanChange}
         onKelurahanChange={handleKelurahanChange}
-        onKodePosChange={handleKodePosChange}
+        errorProvinsi={errors.provinsi?.message}
+        errorKota={errors.kabupaten?.message}
+        errorKecamatan={errors.kecamatan?.message}
+        errorKelurahan={errors.desa?.message}
+        // onKodePosChange={handleKodePosChange} // Disabled as API not available
       />
 
       {/* Hidden inputs untuk validasi */}
@@ -125,11 +130,6 @@ const Step2Alamat = ({ data, onNext, onPrev }: Props) => {
       <input type="hidden" {...register('kecamatan_id')} />
       <input type="hidden" {...register('kelurahan_id')} />
 
-      {/* Error messages untuk wilayah */}
-      {errors.provinsi && <p className="text-sm text-destructive">{errors.provinsi.message}</p>}
-      {errors.kabupaten && <p className="text-sm text-destructive">{errors.kabupaten.message}</p>}
-      {errors.kecamatan && <p className="text-sm text-destructive">{errors.kecamatan.message}</p>}
-      {errors.desa && <p className="text-sm text-destructive">{errors.desa.message}</p>}
 
       <div>
         <Label htmlFor="kode_pos">Kode Pos *</Label>
