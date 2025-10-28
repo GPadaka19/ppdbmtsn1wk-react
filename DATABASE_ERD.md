@@ -410,6 +410,11 @@ INSERT INTO users (email, password_hash, nama, role) VALUES
 ('admin@mtsn1wk.sch.id', '$2a$10$hash...', 'Administrator', 'admin');
 ```
 
+### Reset PPDB Seq
+``` sql
+SELECT setval('siswa_no_seq', 1, false);
+```
+
 ## Notes
 
 1. **UUID vs SERIAL**: Menggunakan UUID untuk primary key pada tabel utama untuk keamanan dan scalability
