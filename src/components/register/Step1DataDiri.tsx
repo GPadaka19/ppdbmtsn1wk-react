@@ -6,17 +6,33 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PendaftaranData } from '@/services/pendaftaranService';
+import { pendaftaranStorage } from '@/utils/pendaftaranStorage';
+import React from 'react';
+import { saveDraftStep, loadDraftStep } from '@/utils/pendaftaranStorage';
+import { cekService } from '@/services/cekService';
 
+// Semua validasi Zod dinonaktifkan sementara, semua field optional
+// const schema = z.object({
+//   nisn: z.string().length(10, 'NISN harus 10 digit').regex(/^\d{10}$/, 'NISN harus berupa 10 digit angka'),
+//   nik: z.string().length(16, 'NIK harus 16 digit').regex(/^\d{16}$/, 'NIK harus berupa 16 digit angka'),
+//   nama_lengkap: z.string().min(3, 'Nama minimal 3 karakter'),
+//   tempat_lahir: z.string().min(2, 'Tempat lahir minimal 2 karakter').regex(/^[a-zA-Z\s]+$/, 'Tempat lahir hanya boleh berisi huruf dan spasi'),
+//   tanggal_lahir: z.string().min(1, 'Tanggal lahir wajib diisi'),
+//   jenis_kelamin: z.enum(['L', 'P'], { required_error: 'Jenis kelamin wajib dipilih' }),
+//   agama: z.string().min(1, 'Agama wajib dipilih'),
+//   anak_ke: z.coerce.number().min(1, 'Anak ke minimal 1'),
+//   jumlah_saudara: z.coerce.number().min(0, 'Jumlah saudara minimal 0'),
+  // });
 const schema = z.object({
-  nisn: z.string().length(10, 'NISN harus 10 digit').regex(/^\d{10}$/, 'NISN harus berupa 10 digit angka'),
-  nik: z.string().length(16, 'NIK harus 16 digit').regex(/^\d{16}$/, 'NIK harus berupa 16 digit angka'),
-  nama_lengkap: z.string().min(3, 'Nama minimal 3 karakter'),
-  tempat_lahir: z.string().min(2, 'Tempat lahir minimal 2 karakter').regex(/^[a-zA-Z\s]+$/, 'Tempat lahir hanya boleh berisi huruf dan spasi'),
-  tanggal_lahir: z.string().min(1, 'Tanggal lahir wajib diisi'),
-  jenis_kelamin: z.enum(['L', 'P'], { required_error: 'Jenis kelamin wajib dipilih' }),
-  agama: z.string().min(1, 'Agama wajib dipilih'),
-  anak_ke: z.coerce.number().min(1, 'Anak ke minimal 1'),
-  jumlah_saudara: z.coerce.number().min(0, 'Jumlah saudara minimal 0'),
+  nisn: z.string().optional(),
+  nik: z.string().optional(),
+  nama_lengkap: z.string().optional(),
+  tempat_lahir: z.string().optional(),
+  tanggal_lahir: z.string().optional(),
+  jenis_kelamin: z.string().optional(),
+  agama: z.string().optional(),
+  anak_ke: z.coerce.number().optional(),
+  jumlah_saudara: z.coerce.number().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -28,13 +44,49 @@ interface Props {
 }
 
 const Step1DataDiri = ({ data, onNext }: Props) => {
-  const { register, handleSubmit, formState: { errors }, setValue } = useForm<FormData>({
+  const { register, handleSubmit, formState: { errors }, setValue, setError, getValues, reset, watch } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: data as FormData,
   });
 
-  const onSubmit = (formData: FormData) => {
-    onNext(formData);
+  // Saat mount, ambil draft dari localStorage kalau ada
+  React.useEffect(() => {
+    const localDraft = loadDraftStep(1);
+    if (localDraft) reset(localDraft);
+  }, [reset]);
+
+  // Auto-save ke localStorage setiap form berubah
+  React.useEffect(() => {
+    const subscription = watch((values) => {
+      saveDraftStep(1, values);
+      pendaftaranStorage.saveData(values);
+    });
+    return () => subscription.unsubscribe();
+  }, [watch]);
+
+  // Custom onSubmit dengan cek unique field ke API
+  const onSubmit = async (formData: FormData) => {
+    saveDraftStep(1, formData);
+    pendaftaranStorage.saveData(formData);
+
+    if (!formData.nisn) {
+      setError('nisn', { type: 'manual', message: 'NISN wajib diisi' });
+      return;
+    }
+    if (!formData.nik) {
+      setError('nik', { type: 'manual', message: 'NIK wajib diisi' });
+      return;
+    }
+    // Cek unik
+    if (await cekService.cekNisn(formData.nisn)) {
+      setError('nisn', { type: 'manual', message: 'NISN sudah terdaftar' });
+      return;
+    }
+    if (await cekService.cekNik(formData.nik)) {
+      setError('nik', { type: 'manual', message: 'NIK sudah terdaftar' });
+      return;
+    }
+    onNext(formData as Partial<PendaftaranData>);
   };
 
   // Handler untuk mencegah input negatif
