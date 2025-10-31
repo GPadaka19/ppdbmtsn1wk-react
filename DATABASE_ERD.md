@@ -266,6 +266,7 @@ CREATE TABLE berkas_siswa (
 CREATE INDEX idx_berkas_siswa_siswa_id ON berkas_siswa(siswa_id);
 ```
 
+
 ### 7. Status Pendaftaran Table
 ```sql
 CREATE TABLE status_pendaftaran (
@@ -283,6 +284,114 @@ CREATE INDEX idx_status_pendaftaran_siswa_id ON status_pendaftaran(siswa_id);
 CREATE INDEX idx_status_pendaftaran_status ON status_pendaftaran(status);
 CREATE INDEX idx_status_pendaftaran_admin_id ON status_pendaftaran(admin_id);
 ```
+
+## Concurrency & Locking (Multi‑Admin Verification)
+
+### Tujuan
+Mencegah dua atau lebih admin memverifikasi pendaftar yang sama di waktu bersamaan. Solusinya memakai **row‑level locking** PostgreSQL dengan `FOR UPDATE SKIP LOCKED`.
+
+### DDL Tambahan (Non‑destruktif)
+> Gunakan `ALTER TABLE` agar aman di DB yang sudah berjalan.
+
+```sql
+-- Kolom untuk menandai siapa yang sedang memeriksa (lock ringan)
+ALTER TABLE status_pendaftaran
+  ADD COLUMN IF NOT EXISTS in_review_by VARCHAR(255),
+  ADD COLUMN IF NOT EXISTS in_review_at TIMESTAMP;
+
+-- (Opsional) Index untuk query monitoring
+CREATE INDEX IF NOT EXISTS idx_status_in_review_by ON status_pendaftaran(in_review_by);
+CREATE INDEX IF NOT EXISTS idx_status_in_review_at ON status_pendaftaran(in_review_at);
+```
+
+### Pola 1 — Antrian "Ambil Berikutnya" (Disarankan)
+Admin **tidak memilih ID**. Backend mengambil satu baris `pending` yang belum terkunci secara atomik.
+
+```sql
+BEGIN;
+
+UPDATE status_pendaftaran
+SET status = 'in_review',
+    in_review_by = $1,          -- nama admin (string)
+    in_review_at = NOW()
+WHERE id = (
+  SELECT id FROM status_pendaftaran
+  WHERE status = 'pending'
+  ORDER BY created_at ASC
+  FOR UPDATE SKIP LOCKED
+  LIMIT 1
+)
+RETURNING id, siswa_id, status, in_review_by, in_review_at;
+
+COMMIT;
+```
+
+**Catatan**:
+- `FOR UPDATE SKIP LOCKED` memastikan baris yang sudah dipilih admin lain akan **dilewati**, sehingga 5 admin yang klik bersamaan mendapat **5 baris berbeda**.
+- Letakkan query di **transaksi** supaya atomic.
+
+### Pola 2 — Klik Per Row (Target ID) + Konflik Terkendali
+Admin memilih ID tertentu. Hanya satu admin yang bisa mengunci; lainnya dapat 409/konflik.
+
+```sql
+WITH locked AS (
+  SELECT id
+  FROM status_pendaftaran
+  WHERE id = $1 AND status = 'pending'
+  FOR UPDATE SKIP LOCKED
+)
+UPDATE status_pendaftaran sp
+SET status = 'in_review',
+    in_review_by = $2,      -- nama admin
+    in_review_at = NOW()
+FROM locked
+WHERE sp.id = locked.id
+RETURNING sp.id, sp.siswa_id, sp.status, sp.in_review_by, sp.in_review_at;
+```
+
+Jika `RETURNING` kosong → baris sudah diambil orang lain. Backend balas **409 Conflict** dan (opsional) fallback ke **Pola 1**.
+
+### Selesaikan Verifikasi / Rilis Lock
+Saat admin menyelesaikan review:
+
+```sql
+-- Verifikasi Lolos
+UPDATE status_pendaftaran
+SET status = 'verified',
+    keterangan = $2,
+    admin_id = $3,
+    tanggal_verifikasi = NOW(),
+    in_review_by = NULL,
+    in_review_at = NULL
+WHERE id = $1;
+
+-- Atau Ditolak
+UPDATE status_pendaftaran
+SET status = 'rejected',
+    keterangan = $2,
+    admin_id = $3,
+    tanggal_verifikasi = NOW(),
+    in_review_by = NULL,
+    in_review_at = NULL
+WHERE id = $1;
+```
+
+### Auto‑Release Lock yang Menganggur (Cron)
+Agar lock tidak menggantung jika admin menutup halaman:
+
+```sql
+UPDATE status_pendaftaran
+SET status = 'pending',
+    in_review_by = NULL,
+    in_review_at = NULL
+WHERE status = 'in_review'
+  AND in_review_at < NOW() - INTERVAL '15 minutes';
+```
+
+### Monitoring & UI Hints
+- Tampilkan badge **In Review by {nama}** di tabel.
+- Sediakan tombol **Ambil Berikutnya** (Pola 1) untuk fairness & skalabilitas.
+- (Opsional) Tambah endpoint ping/keep‑alive untuk memperbarui `in_review_at` setiap 1–2 menit saat halaman detail terbuka.
 
 
 ## Triggers and Functions
@@ -400,14 +509,46 @@ CREATE TRIGGER auto_generate_user_password_trigger
     BEFORE INSERT ON users 
     FOR EACH ROW 
     EXECUTE FUNCTION auto_generate_user_password();
+
+
+  CREATE OR REPLACE FUNCTION uppercase_nama()
+  RETURNS trigger AS $$
+  BEGIN
+    NEW.nama_lengkap := UPPER(NEW.nama_lengkap);
+    RETURN NEW;
+  END;
+  $$ LANGUAGE plpgsql;
+
+  CREATE TRIGGER upper_nama_lengkap
+  BEFORE INSERT OR UPDATE ON siswa
+  FOR EACH ROW EXECUTE FUNCTION uppercase_nama();
+
+    CREATE OR REPLACE FUNCTION uppercase_Tlahir()
+  RETURNS trigger AS $$
+  BEGIN
+    NEW.tempat_lahir := UPPER(NEW.tempat_lahir);
+    RETURN NEW;
+  END;
+  $$ LANGUAGE plpgsql;
+
+  CREATE TRIGGER upper_tempat_lahir
+  BEFORE INSERT OR UPDATE ON siswa
+  FOR EACH ROW EXECUTE FUNCTION uppercase_Tlahir();
+
+
 ```
 
 ## Sample Data
 
 ### Insert Sample Admin User
 ```sql
-INSERT INTO users (email, password_hash, nama, role) VALUES 
-('admin@mtsn1wk.sch.id', '$2a$10$hash...', 'Administrator', 'admin');
+INSERT INTO users (email, password_hash, nama, role)
+VALUES (
+    'admin@mtsn1wk.sch.id',
+    hash_password('admin123'),
+    'Administrator',
+    'admin'
+);
 ```
 
 ### Reset PPDB Seq
@@ -450,13 +591,30 @@ SELECT setval('siswa_no_seq', 1, false);
 
 ## API Endpoints Mapping
 
-- `GET /api/wilayah/provinsi` → Query ke database wilayah terpisah
+- `POST /api/admin/pick-pendaftar` → Pola 1 (ambil berikutnya / atomic lock)
+- `POST /api/admin/start-review/:id` → Pola 2 (lock by ID; 409 jika sudah diambil)
+- `POST /api/admin/complete/:id` → Verifikasi/Reject + clear lock
+- `POST /api/admin/release-stale` → Dipakai cron untuk auto‑release lock idle
+
+- `GET /api/wilayah/provinsi` → Query ke database provinsi
 - `GET /api/wilayah/kota?provinsi_id=X` → Query ke database wilayah terpisah
 - `GET /api/wilayah/kecamatan?kota_id=X` → Query ke database wilayah terpisah
 - `GET /api/wilayah/kelurahan?kecamatan_id=X` → Query ke database wilayah terpisah
-- `POST /api/siswa/pendaftaran` → Insert ke semua tabel PPDB database + Auto-generate password + Kirim email
-- `GET /api/admin/pendaftar` → Join query semua tabel PPDB database
-- `PUT /api/admin/verifikasi/:id` → Update status_pendaftaran di PPDB database
-- `POST /api/upload/berkas` → Terima file dari frontend | Simpan ke folder /berkas-ppdb/ | Return URL file
+
+- `POST /api/siswa/pendaftaran` → Insert ke semua tabel PPDB database + Auto-generate password + Kirim email via Mailgun
+- `POST /api/siswa/status` → Dapatkan status siswa terdaftar
+
+- `POST /api/auth/login` → Login users siswa/admin
+x `POST /api/auth/check-email` → Check apakah email terdaftar sebelum kirim password baru
+x `POST /api/auth/forgot-password` → Jika email terdaftar kirim email password baru
 - `POST /api/auth/login` → Login dengan email + password (auto-generated)
-- `POST /api/auth/forgot-password` → Reset password + Kirim email baru
+
+- `GET /api/admin/pendaftar` → Join query semua tabel PPDB database
+- `GET /api/admin/pendaftar/:id` → Dapatkan detail form pendaftaran siswa berdasar id
+- `PUT /api/admin/verifikasi/:id` → Update status_pendaftaran di PPDB database
+
+x `POST /api/upload/berkas` → Terima file dari frontend | Simpan ke folder /berkas-ppdb/ | Return URL file
+- `GET /api/cek/email?email=mail@example.com` → Check apakah email sudah digunakan/terdaftar
+- `GET /api/cek/nisn?nisn=12345678` → Check apakah NISN user (siswa)  sudah digunakan/terdaftar
+- `GET /api/cek/nik?nik=1234567890123456` → Check apakah NIK user (siswa) digunakan/terdaftar
+

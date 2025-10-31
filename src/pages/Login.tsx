@@ -14,7 +14,7 @@ import axios from 'axios';
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Email tidak valid' }),
-  password: z.string().min(6, { message: 'Password minimal 6 karakter' }),
+  password: z.string().min(5, { message: 'Password ada 5 karakter' }),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -47,9 +47,9 @@ const Login = () => {
       
       // Redirect based on role
       if (user.role === 'admin') {
-        navigate('/admin');
+        navigate('/admin/dashboard', { state: { email: user.email } });
       } else {
-        navigate('/dashboard');
+        navigate('/siswa/dashboard', { state: { email: user.email } });
       }
     } catch (error) {
       toast.error('Login gagal. Periksa email dan password Anda.');

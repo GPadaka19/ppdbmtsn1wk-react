@@ -11,7 +11,6 @@ import React from 'react';
 import { saveDraftStep, loadDraftStep } from '@/utils/pendaftaranStorage';
 import { cekService } from '@/services/cekService';
 
-// Semua validasi Zod dinonaktifkan sementara, semua field optional
 const schema = z.object({
   nisn: z.string().length(10, 'NISN harus 10 digit').regex(/^[0-9]{10}$/, 'NISN harus berupa 10 digit angka'),
   nik: z.string().length(16, 'NIK harus 16 digit').regex(/^[0-9]{16}$/, 'NIK harus berupa 16 digit angka'),
@@ -29,6 +28,7 @@ const schema = z.object({
   jumlah_saudara: z.coerce.number().min(0, 'Jumlah saudara minimal 0'),
 });
 
+// Semua validasi Zod dinonaktifkan sementara, semua field optional
 // const schema = z.object({
 //   nisn: z.string().optional(),
 //   nik: z.string().optional(),
