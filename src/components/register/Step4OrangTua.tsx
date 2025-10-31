@@ -13,87 +13,110 @@ import { Checkbox } from '@/components/ui/checkbox';
 import * as React from 'react';
 import { saveDraftStep, loadDraftStep } from '@/utils/pendaftaranStorage';
 
-const schema = z.object({
-  nama_ayah: z.string().min(3,'Nama Ayah minimal 3 karakter'),
-  nik_ayah: z.string().min(16).max(16,'NIK Ayah minimal 16 digit'),
-  pekerjaan_ayah: z.string().min(3,'Pekerjaan Ayah minimal 3 karakter'),
-  penghasilan_ayah: z.string().min(1,'Penghasilan Ayah waijib diisi'),
-  pendidikan_ayah: z.string().min(1,'Pendidikan Ayah waijib diisi'),
-  no_hp_ayah: z.string().min(10,'Nomor HP Ayah minimal 10 digit'),
-  nama_ibu: z.string().min(3,'Nama Ibu minimal 3 karakter'),
-  nik_ibu: z.string().min(16).max(16,'NIK Ibu minimal 16 digit'),
-  pekerjaan_ibu: z.string().min(3,'Pekerjaan Ibu minimal 3 karakter'),
-  penghasilan_ibu: z.string().min(1,'Penghasilan Ibu waijib diisi'),
-  pendidikan_ibu: z.string().min(1,'Pendidikan Ibu waijib diisi'),
-  no_hp_ibu: z.string().min(10,'Nomor HP Ibu minimal 10 digit'),
-  nama_wali: z.string().optional(),
-  nik_wali: z.string().optional(),
-  pekerjaan_wali: z.string().optional(),
-  penghasilan_wali: z.string().optional(),
-  pendidikan_wali: z.string().optional(),
-  no_hp_wali: z.string().optional(),
-  hubungan_wali: z.string().optional(),  
-})
-.superRefine((val, ctx) => {
-  const waliKeys = [
-    'nama_wali',
-    'nik_wali',
-    'pekerjaan_wali',
-    'penghasilan_wali',
-    'pendidikan_wali',
-    'no_hp_wali',
-    'hubungan_wali',
-  ] as const;
+const schema = z
+  .object({
+    nama_ayah: z.string().min(3,'Nama Ayah minimal 3 karakter'),
+    nik_ayah: z.string().length(16, 'NIK harus 16 digit').regex(/^[0-9]{16}$/, 'NIK harus berupa 16 digit angka'),
+    pekerjaan_ayah: z.string().min(3,'Pekerjaan Ayah minimal 3 karakter'),
+    penghasilan_ayah: z.string().min(1,'Penghasilan Ayah waijib diisi'),
+    pendidikan_ayah: z.string().min(1,'Pendidikan Ayah waijib diisi'),
+    no_hp_ayah: z.string().min(10,'Nomor HP Ayah minimal 10 digit'),
 
-  const isFilled = (v: unknown) => typeof v === 'string' && v.trim().length > 0;
+    nama_ibu: z.string().min(3,'Nama Ibu minimal 3 karakter'),
+    nik_ibu: z.string().length(16, 'NIK harus 16 digit').regex(/^[0-9]{16}$/, 'NIK harus berupa 16 digit angka'),
+    pekerjaan_ibu: z.string().min(3,'Pekerjaan Ibu minimal 3 karakter'),
+    penghasilan_ibu: z.string().min(1,'Penghasilan Ibu waijib diisi'),
+    pendidikan_ibu: z.string().min(1,'Pendidikan Ibu waijib diisi'),
+    no_hp_ibu: z.string().min(10,'Nomor HP Ibu minimal 10 digit'),
 
-  const filledCount = waliKeys.reduce(
-    (acc, k) => acc + (isFilled((val as any)[k]) ? 1 : 0),
-    0
-  );
+    // Wali (opsional secara field, tapi akan diatur oleh checkbox & superRefine)
+    nama_wali: z.string().optional(),
+    nik_wali: z.string().optional(),
+    pekerjaan_wali: z.string().optional(),
+    penghasilan_wali: z.string().optional(),
+    pendidikan_wali: z.string().optional(),
+    no_hp_wali: z.string().optional(),
+    hubungan_wali: z.string().optional(),
 
-  // Jika ada yang diisi tapi tidak semuanya → error pada field yang kosong
-  if (filledCount > 0 && filledCount < waliKeys.length) {
-    waliKeys.forEach((k) => {
-      if (!isFilled((val as any)[k])) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: [k],
-          message: 'Lengkapi semua data wali atau kosongkan semuanya',
+    // Checkbox pengendali
+    tinggal_dengan_wali: z.boolean().optional().default(false),
+  })
+  .superRefine((val, ctx) => {
+    const waliKeys = [
+      'nama_wali',
+      'nik_wali',
+      'pekerjaan_wali',
+      'penghasilan_wali',
+      'pendidikan_wali',
+      'no_hp_wali',
+      'hubungan_wali',
+    ] as const;
+
+    const isFilled = (v: unknown) => typeof v === 'string' && v.trim().length > 0;
+    const tinggalDenganWali = Boolean((val as any).tinggal_dengan_wali);
+
+    const filledCount = waliKeys.reduce(
+      (acc, k) => acc + (isFilled((val as any)[k]) ? 1 : 0),
+      0
+    );
+
+    if (tinggalDenganWali) {
+      // Jika tinggal dengan wali → semua field wali WAJIB
+      if (filledCount < waliKeys.length) {
+        waliKeys.forEach((k) => {
+          if (!isFilled((val as any)[k])) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: [k],
+              message: 'Wajib diisi karena tinggal bersama wali',
+            });
+          }
         });
+        return;
       }
-    });
-    return;
-  }
+    } else {
+      // Tidak tinggal dengan wali → boleh kosong semua,
+      // tetapi jika ada satu terisi, semua harus terisi (all-or-none)
+      if (filledCount > 0 && filledCount < waliKeys.length) {
+        waliKeys.forEach((k) => {
+          if (!isFilled((val as any)[k])) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: [k],
+              message: 'Lengkapi semua data wali atau kosongkan semuanya',
+            });
+          }
+        });
+        return;
+      }
+      if (filledCount === 0) return; // kosong semua: valid
+    }
 
-  // Jika semuanya kosong → valid (tidak tinggal dengan wali)
-  if (filledCount === 0) return;
-
-  // Jika semua terisi, cek aturan minimum khusus wali
-  const v: any = val;
-  if (v.nama_wali.trim().length < 3) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['nama_wali'], message: 'Nama Wali minimal 3 karakter' });
-  }
-  if (v.nik_wali.length !== 16) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['nik_wali'], message: 'NIK Wali harus 16 digit' });
-  }
-  if (v.pekerjaan_wali.trim().length < 3) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['pekerjaan_wali'], message: 'Pekerjaan Wali minimal 3 karakter' });
-  }
-  if (!isFilled(v.penghasilan_wali)) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['penghasilan_wali'], message: 'Penghasilan Wali wajib diisi' });
-  }
-  if (!isFilled(v.pendidikan_wali)) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['pendidikan_wali'], message: 'Pendidikan Wali wajib diisi' });
-  }
-  const hpDigits = String(v.no_hp_wali).replace(/\\D/g, '');
-  if (hpDigits.length < 10) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['no_hp_wali'], message: 'Nomor HP Wali minimal 10 digit' });
-  }
-  if (!isFilled(v.hubungan_wali)) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['hubungan_wali'], message: 'Hubungan Wali wajib diisi' });
-  }
-});
+    // Validasi minimum saat semua field wali terisi
+    const v: any = val;
+    if (v.nama_wali.trim().length < 3) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['nama_wali'], message: 'Nama Wali minimal 3 karakter' });
+    }
+    if (String(v.nik_wali).length !== 16) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['nik_wali'], message: 'NIK Wali harus 16 digit' });
+    }
+    if (v.pekerjaan_wali.trim().length < 3) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['pekerjaan_wali'], message: 'Pekerjaan Wali minimal 3 karakter' });
+    }
+    if (!isFilled(v.penghasilan_wali)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['penghasilan_wali'], message: 'Penghasilan Wali wajib diisi' });
+    }
+    if (!isFilled(v.pendidikan_wali)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['pendidikan_wali'], message: 'Pendidikan Wali wajib diisi' });
+    }
+    const hpDigits = String(v.no_hp_wali || '').replace(/\D/g, '');
+    if (hpDigits.length < 10) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['no_hp_wali'], message: 'Nomor HP Wali minimal 10 digit' });
+    }
+    if (!isFilled(v.hubungan_wali)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['hubungan_wali'], message: 'Hubungan Wali wajib diisi' });
+    }
+  });
 
 // Schema sementara dengan semua field optional untuk development
 // const schema = z.object({
@@ -144,6 +167,8 @@ const Step4OrangTua = ({ data, onNext, onPrev }: Props) => {
     });
     return () => subscription.unsubscribe();
   }, [watch]);
+
+  const tinggalDenganWali = watch('tinggal_dengan_wali') || false;
 
   const penghasilanOptions = [
     '< Rp 1.000.000',
@@ -274,26 +299,45 @@ const Step4OrangTua = ({ data, onNext, onPrev }: Props) => {
       {/* Data Wali */}
       <div className="space-y-4">
         <h3 className="text-lg font-bold text-foreground">Data Wali</h3>
+        <p className="text-xs text-muted-foreground -mt-2">
+          Opsional. Centang jika tinggal bersama wali. Jika dicentang, semua data wali wajib diisi.
+          Jika tidak memiliki orang tua, harap centang ini dan isi lengkap data wali.
+        </p>
+        <div className="flex items-center gap-2 pt-2">
+          <Checkbox
+            checked={tinggalDenganWali}
+            onCheckedChange={(v) => {
+              const on = Boolean(v);
+              setValue('tinggal_dengan_wali', on, { shouldValidate: true });
+              if (!on) {
+                ['nama_wali','nik_wali','pekerjaan_wali','penghasilan_wali','pendidikan_wali','no_hp_wali','hubungan_wali']
+                  .forEach((k) => setValue(k as any, undefined, { shouldValidate: true }));
+              }
+            }}
+            id="tinggal_dengan_wali"
+          />
+          <Label htmlFor="tinggal_dengan_wali">Tinggal bersama wali</Label>
+        </div>
         <div className="grid md:grid-cols-2 gap-4">
           <div>
             <Label>Nama Wali</Label>
-            <Input {...register('nama_wali')} />
+            <Input {...register('nama_wali')} disabled={!tinggalDenganWali} />
             {errors.nama_wali && <p className="text-sm text-destructive mt-1">{errors.nama_wali.message}</p>}
           </div>
           <div>
             <Label>NIK Wali</Label>
-            <Input {...register('nik_wali')} />
+            <Input {...register('nik_wali')} disabled={!tinggalDenganWali} />
             {errors.nik_wali && <p className="text-sm text-destructive mt-1">{errors.nik_wali.message}</p>}
           </div>
           <div>
             <Label>Pekerjaan</Label>
-            <Input {...register('pekerjaan_wali')} />
+            <Input {...register('pekerjaan_wali')} disabled={!tinggalDenganWali} />
             {errors.pekerjaan_wali && <p className="text-sm text-destructive mt-1">{errors.pekerjaan_wali.message}</p>}
           </div>
           <div>
             <Label>Penghasilan</Label>
             <Select onValueChange={(v) => setValue('penghasilan_wali', v)} defaultValue={data.penghasilan_wali}>
-              <SelectTrigger><SelectValue placeholder="Pilih" /></SelectTrigger>
+              <SelectTrigger disabled={!tinggalDenganWali}><SelectValue placeholder="Pilih" /></SelectTrigger>
               <SelectContent>
                 {penghasilanOptions.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
               </SelectContent>
@@ -303,7 +347,7 @@ const Step4OrangTua = ({ data, onNext, onPrev }: Props) => {
           <div>
             <Label>Pendidikan</Label>
             <Select onValueChange={(v) => setValue('pendidikan_wali', v)} defaultValue={data.pendidikan_wali}>
-              <SelectTrigger><SelectValue placeholder="Pilih" /></SelectTrigger>
+              <SelectTrigger disabled={!tinggalDenganWali}><SelectValue placeholder="Pilih" /></SelectTrigger>
               <SelectContent>
                 {pendidikanOptions.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
               </SelectContent>
@@ -312,7 +356,7 @@ const Step4OrangTua = ({ data, onNext, onPrev }: Props) => {
           </div>
           <div>
             <Label>Nomor HP</Label>
-            <Input {...register('no_hp_wali')} />
+            <Input {...register('no_hp_wali')} disabled={!tinggalDenganWali} />
             {errors.no_hp_wali && <p className="text-sm text-destructive mt-1">{errors.no_hp_wali.message}</p>}
           </div>
           <div>
@@ -326,14 +370,14 @@ const Step4OrangTua = ({ data, onNext, onPrev }: Props) => {
               }}
               defaultValue={HubunganWaliOptions.includes((data.hubungan_wali as string) || '') ? data.hubungan_wali : undefined}
             >
-              <SelectTrigger><SelectValue placeholder="Pilih" /></SelectTrigger>
+              <SelectTrigger disabled={!tinggalDenganWali}><SelectValue placeholder="Pilih" /></SelectTrigger>
               <SelectContent>
                 {HubunganWaliOptions.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
               </SelectContent>
             </Select>
             {isHubunganLainnya && (
               <div className="mt-2">
-                <Input placeholder="Tulis hubungan wali" {...register('hubungan_wali')} />
+                <Input placeholder="Tulis hubungan wali" {...register('hubungan_wali')} disabled={!tinggalDenganWali} />
                 <p className="text-xs text-muted-foreground mt-1">Contoh: Orang tua asuh, Pengurus panti, Tetangga dsb.</p>
               </div>
             )}
