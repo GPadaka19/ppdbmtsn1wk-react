@@ -116,7 +116,7 @@ const WilayahDropdown: React.FC<WilayahDropdownProps> = ({
 
   // Search kelurahan when user types
   useEffect(() => {
-    if (debouncedKelurahanValue.length >= 2 && selectedKecamatanId) {
+    if (debouncedKelurahanValue.length >= 8 && selectedKecamatanId) {
       searchKelurahan(debouncedKelurahanValue, selectedKecamatanId);
     } else if (debouncedKelurahanValue.length === 0 && selectedKecamatanId) {
       loadKelurahan(selectedKecamatanId);

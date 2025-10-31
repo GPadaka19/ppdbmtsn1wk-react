@@ -40,6 +40,25 @@ const App = () => {
     if (import.meta.env.DEV) CD();
   }, []);
 
+  // Disable page scrolling via ArrowUp/ArrowDown across all pages, while
+  // preserving arrow-key behavior inside editable fields (inputs/textareas/contentEditable)
+  useEffect(() => {
+    const handleArrowScrollBlock = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isEditable = !!target && (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        (target as HTMLElement).isContentEditable
+      );
+      if (!isEditable && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+        e.preventDefault();
+      }
+    };
+    const opts = { passive: false } as AddEventListenerOptions;
+    window.addEventListener('keydown', handleArrowScrollBlock, opts);
+    return () => window.removeEventListener('keydown', handleArrowScrollBlock, opts);
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -65,7 +84,7 @@ const App = () => {
               <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
                 <Route path="/admin/dashboard" element={<DashboardAdmin />} />
                 <Route path="/admin/pendaftar" element={<PendaftarAdmin />} />
-                <Route path="/admin/detail-pendaftar" element={<DetailPendaftarAdmin />} />
+                <Route path="/admin/pendaftar/:id" element={<DetailPendaftarAdmin />} />
 
               </Route>
               {/* 404 */}
