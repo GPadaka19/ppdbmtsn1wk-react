@@ -1,35 +1,38 @@
 import Navigation from '@/components/layout/Navigation';
 import Footer from '@/components/layout/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, UserCheck, UserX, Clock, Search, Filter, ChevronDown, ChevronLeft, ChevronRight, X, Loader2 } from 'lucide-react';
+import { Users, UserCheck, UserX, Clock, Eye, CheckCircle, Search, Filter, ChevronDown, ChevronLeft, ChevronRight, X, Loader2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminService } from '@/services/adminService';
+import { authService } from '@/services/authService';
 
 const DashboardAdmin = () => {
   const navigate = useNavigate();
+  const token = authService.getToken() || '';
   const [summary, setSummary] = useState({
     total_pendaftar: 0,
     pending: 0,
+    in_review: 0,
     verified: 0,
     rejected: 0,
-    accepted: 0,
   });
   const [summaryLoading, setSummaryLoading] = useState(true);
 
   const nf = useMemo(() => new Intl.NumberFormat('id-ID'), []);
 
   const stats = [
-    { icon: Users, label: 'Total Pendaftar', value: nf.format(summary.total_pendaftar), color: 'text-primary', bg: 'bg-primary/5' },
-    { icon: Clock, label: 'Pending', value: nf.format(summary.pending), color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/30' },
-    { icon: UserCheck, label: 'Verified', value: nf.format(summary.verified), color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-950/30' },
-    { icon: UserX, label: 'Rejected', value: nf.format(summary.rejected), color: 'text-rose-600', bg: 'bg-rose-50 dark:bg-rose-950/30' },
+    { icon: Users,       label: 'Total Pendaftar', value: nf.format(summary.total_pendaftar), color: 'text-primary',         bg: 'bg-primary/5' },
+    { icon: Clock,       label: 'Pending',         value: nf.format(summary.pending),         color: 'text-slate-700',        bg: 'bg-slate-100 dark:bg-slate-950/30' },
+    { icon: Eye,         label: 'In Review',       value: nf.format(summary.in_review),      color: 'text-amber-700',        bg: 'bg-amber-100 dark:bg-amber-950/30' },
+    { icon: UserCheck,   label: 'Verified',        value: nf.format(summary.verified),       color: 'text-emerald-700',      bg: 'bg-emerald-100 dark:bg-emerald-950/30' },
+    { icon: UserX,       label: 'Rejected',        value: nf.format(summary.rejected),       color: 'text-rose-700',         bg: 'bg-rose-100 dark:bg-rose-950/30' },
   ];
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'verified' | 'rejected' | 'accepted'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'in_review' | 'verified' | 'rejected'>('all');
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
   const [total, setTotal] = useState(0);
@@ -43,10 +46,10 @@ const DashboardAdmin = () => {
   const renderStatusBadge = (status?: string) => {
     const s = (status || '').toLowerCase();
     const base = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium';
-    if (s === 'verified') return <span className={`${base} bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300`}>Verified</span>;
-    if (s === 'rejected') return <span className={`${base} bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-300`}>Rejected</span>;
-    if (s === 'accepted') return <span className={`${base} bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300`}>Accepted</span>;
-    return <span className={`${base} bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300`}>Pending</span>;
+    if (s === 'verified')  return <span className={`${base} bg-emerald-100 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300`}>Verified</span>;
+    if (s === 'rejected')  return <span className={`${base} bg-rose-100 text-rose-800 dark:bg-rose-950/30 dark:text-rose-300`}>Rejected</span>;
+    if (s === 'in_review') return <span className={`${base} bg-amber-100 text-amber-800 dark:bg-amber-950/30 dark:text-amber-300`}>In Review</span>;
+    return                       <span className={`${base} bg-slate-100 text-slate-800 dark:bg-slate-950/30 dark:text-slate-300`}>Pending</span>;
   };
 
   const totalPages = useMemo(() => Math.max(1, Math.ceil(total / limit)), [total, limit]);
@@ -108,7 +111,7 @@ const DashboardAdmin = () => {
             <p className="text-muted-foreground mt-1 text-sm">Ringkasan dan daftar pendaftar terbaru</p>
           </div>
           
-          <div className="grid md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
             {stats.map((stat, i) => (
               <Card key={i} className={stat.bg}>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -164,9 +167,9 @@ const DashboardAdmin = () => {
                 >
                   <option value="all">Semua Status</option>
                   <option value="pending">Pending</option>
+                  <option value="in_review">In Review</option>
                   <option value="verified">Verified</option>
                   <option value="rejected">Rejected</option>
-                  <option value="accepted">Accepted</option>
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
               </div>
@@ -198,8 +201,8 @@ const DashboardAdmin = () => {
                     <th className="px-4 py-3 text-left font-medium">Nama</th>
                     <th className="px-4 py-3 text-left font-medium">Email</th>
                     <th className="px-4 py-3 text-left font-medium">Status</th>
-                    <th className="px-4 py-3 text-left font-medium">Tanggal Daftar</th>
                     <th className="px-4 py-3 text-left font-medium">Keterangan</th>
+                    <th className="px-4 py-3 text-left font-medium">Tanggal Daftar</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -226,8 +229,8 @@ const DashboardAdmin = () => {
                         <td className="px-4 py-3">{r.nama_lengkap || '-'}</td>
                         <td className="px-4 py-3">{r.email || '-'}</td>
                         <td className="px-4 py-3">{renderStatusBadge(r.status)}</td>
+                        <td className="px-4 py-3">{r.status === 'in_review' ? `by ${r.in_review_by || '-'}`: (r.keterangan?.trim() ? r.keterangan : '-')}</td>
                         <td className="px-4 py-3 whitespace-nowrap">{r.tanggal_daftar || '-'}</td>
-                        <td className="px-4 py-3">{r.keterangan ?? '-'}</td>
                       </tr>
                     ))
                   )}
@@ -261,7 +264,7 @@ const DashboardAdmin = () => {
           </div>
         </div>
       </div>
-      <Footer />
+      {/* <Footer /> */}
     </div>
   );
 };
