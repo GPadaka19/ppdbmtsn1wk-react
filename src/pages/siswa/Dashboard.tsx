@@ -41,9 +41,28 @@ function classForStatus(s?: StatusPendaftaran) {
       return 'bg-green-600';
     case 'rejected':
       return 'bg-destructive';
+    case 'in_review':
+      return 'bg-yellow-600';
     case 'pending':
     default:
       return 'bg-warning';
+  }
+}
+
+function labelForStatus(s?: StatusPendaftaran) {
+  switch ((s || '').toLowerCase()) {
+    case 'in_review':
+      return 'In Review';
+    case 'pending':
+      return 'Pending';
+    case 'verified':
+      return 'Verified';
+    case 'accepted':
+      return 'Accepted';
+    case 'rejected':
+      return 'Rejected';
+    default:
+      return s || '-';
   }
 }
 
@@ -205,7 +224,7 @@ const DashboardSiswa = ({
                     <span className="text-foreground">Status:</span>
                     <div className="mt-2">
                       <Badge className={classForStatus(data.status)}>
-                        {data.status}
+                        {labelForStatus(data.status)}
                       </Badge>
                     </div>
                   </div>
