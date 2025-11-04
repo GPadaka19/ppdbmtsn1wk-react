@@ -47,9 +47,18 @@ export interface PendaftarDetail {
 export interface DashboardStats {
   total_pendaftar: number;
   pending: number;
+  in_review: number;
   verified: number;
   rejected: number;
   accepted: number;
+}
+
+export interface ReviewPendaftar {
+  id: string;
+  siswa_id?: string;
+  status: string;
+  in_review_by?: string;
+  in_review_at?: string; // ISO string
 }
 
 export const adminService = {
@@ -69,6 +78,7 @@ export const adminService = {
     return {
       total_pendaftar: s.total ?? 0,
       pending: s.pending ?? 0,
+      in_review: (s as any).in_review ?? 0,
       verified: s.verified ?? 0,
       rejected: s.rejected ?? 0,
       accepted: s.accepted ?? 0,
@@ -114,8 +124,18 @@ export const adminService = {
     return response.data as PendaftarDetail;
   },
 
+  async starReviewPendaftar(id: string): Promise<ReviewPendaftar> {
+    const response = await api.post(`/admin/start-review/${id}`);
+    return response.data as ReviewPendaftar;
+  },
+
   async verifikasiPendaftar(id: string, status: 'verified' | 'rejected', keterangan?: string): Promise<{ message: string }> {
     const response = await api.put(`/admin/verifikasi/${id}`, { status, keterangan });
+    return response.data;
+  },
+
+  async cancelReviewPendaftar(id: string): Promise<{ message: string }> {
+    const response = await api.post(`/admin/cancel-review/${id}`);
     return response.data;
   },
 };
