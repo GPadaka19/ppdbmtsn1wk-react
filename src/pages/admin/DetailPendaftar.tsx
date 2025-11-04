@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { adminService, PendaftarDetail } from '@/services/adminService';
+import { adminService, PendaftarDetail, ReviewPendaftar } from '@/services/adminService';
 import { ArrowLeft, Loader2, UserCheck, UserX, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -18,34 +18,55 @@ const DetailPendaftarAdmin = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [data, setData] = useState<PendaftarDetail | null>(null);
+  const [isReviewing, setIsReviewing] = useState(false);
+  const [reviewStatus, setReviewStatus] = useState<ReviewPendaftar | null>(null);
   const [verifying, setVerifying] = useState(false);
   const [showVerifikasiDialog, setShowVerifikasiDialog] = useState(false);
   const [showTolakDialog, setShowTolakDialog] = useState(false);
   const [keterangan, setKeterangan] = useState('');
   const [actionType, setActionType] = useState<'verified' | 'rejected' | null>(null);
 
+  // Load review mode saat masuk, dan juga data detail
   useEffect(() => {
     if (!id) {
       setError('ID pendaftar tidak ditemukan');
       setLoading(false);
       return;
     }
-
-    const fetchData = async () => {
+    (async () => {
       try {
         setLoading(true);
         setError('');
+        setIsReviewing(false);
+        // Call starReviewPendaftar sebelum getPendaftarDetail
+        const review = await adminService.starReviewPendaftar(id);
+        setReviewStatus(review);
+        setIsReviewing(true);
         const result = await adminService.getPendaftarDetail(id);
         setData(result);
       } catch (e: any) {
-        setError(e?.response?.data?.error || e?.message || 'Gagal memuat data pendaftar');
+        setError(e?.response?.data?.error || e?.message || 'Gagal memuat detail pendaftar');
       } finally {
         setLoading(false);
       }
-    };
-
-    fetchData();
+    })();
   }, [id]);
+
+  // Tombol kembali: intercept sebelum navigate jika status !== verified/rejected
+  const handleBack = async () => {
+    if (!data || data.status === 'verified' || data.status === 'rejected') {
+      navigate('/admin/dashboard');
+      return;
+    }
+    const konfirmasi = window.confirm('Anda belum melakukan verifikasi/tolak pada pendaftar ini. Keluar dari halaman detail akan membatalkan review Anda. Lanjutkan?');
+    if (konfirmasi && id) {
+      try {
+        await adminService.cancelReviewPendaftar(id);
+        // Optionally fetch latest dashboard data here
+      } catch {}
+      navigate('/admin/dashboard');
+    }
+  };
 
   const openVerifikasiDialog = () => {
     setKeterangan('Lolos administrasi');
@@ -148,7 +169,7 @@ const DetailPendaftarAdmin = () => {
         <Navigation />
         <div className="section-padding">
           <div className="container-custom">
-            <Button variant="ghost" onClick={() => navigate('/admin/dashboard')} className="mb-4">
+            <Button variant="ghost" onClick={handleBack} className="mb-4">
               <ArrowLeft className="h-4 w-4 mr-2" /> Kembali
             </Button>
             <Card>
@@ -170,7 +191,7 @@ const DetailPendaftarAdmin = () => {
         <div className="container-custom">
           <div className="mb-6 flex items-center justify-between">
             <div>
-              <Button variant="ghost" onClick={() => navigate('/admin/dashboard')} className="mb-2">
+              <Button variant="ghost" onClick={handleBack} className="mb-2">
                 <ArrowLeft className="h-4 w-4 mr-2" /> Kembali
               </Button>
               <h1 className="text-3xl font-bold">Detail Pendaftar</h1>
