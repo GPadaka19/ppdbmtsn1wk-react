@@ -276,6 +276,8 @@ CREATE TABLE status_pendaftaran (
     keterangan TEXT,
     admin_id UUID REFERENCES users(id),
     tanggal_verifikasi TIMESTAMP,
+    in_review_by VARCHAR(256),
+    in_review_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -283,6 +285,8 @@ CREATE TABLE status_pendaftaran (
 CREATE INDEX idx_status_pendaftaran_siswa_id ON status_pendaftaran(siswa_id);
 CREATE INDEX idx_status_pendaftaran_status ON status_pendaftaran(status);
 CREATE INDEX idx_status_pendaftaran_admin_id ON status_pendaftaran(admin_id);
+CREATE INDEX IF NOT EXISTS idx_status_in_review_by ON status_pendaftaran(in_review_by);
+CREATE INDEX IF NOT EXISTS idx_status_in_review_at ON status_pendaftaran(in_review_at);
 ```
 
 ## Concurrency & Locking (Multi‑Admin Verification)
