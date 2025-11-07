@@ -124,7 +124,7 @@ export const adminService = {
     return response.data as PendaftarDetail;
   },
 
-  async starReviewPendaftar(id: string): Promise<ReviewPendaftar> {
+  async startReviewPendaftar(id: string): Promise<ReviewPendaftar> {
     const response = await api.post(`/admin/start-review/${id}`);
     return response.data as ReviewPendaftar;
   },
