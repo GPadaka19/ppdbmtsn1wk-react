@@ -38,11 +38,12 @@ const DetailPendaftarAdmin = () => {
         setLoading(true);
         setError('');
         setIsReviewing(false);
-        // Call starReviewPendaftar sebelum getPendaftarDetail
-        const review = await adminService.starReviewPendaftar(id);
+        // Call startReviewPendaftar sebelum getPendaftarDetail
+        const review = await adminService.startReviewPendaftar(id);
         setReviewStatus(review);
         setIsReviewing(true);
         const result = await adminService.getPendaftarDetail(id);
+        console.log('DATA DARI API:', result);
         setData(result);
       } catch (e: any) {
         setError(e?.response?.data?.error || e?.message || 'Gagal memuat detail pendaftar');
@@ -144,7 +145,7 @@ const DetailPendaftarAdmin = () => {
     if (s === 'verified') return <Badge className="bg-emerald-500 text-white">Verified</Badge>;
     if (s === 'rejected') return <Badge className="bg-rose-500 text-white">Rejected</Badge>;
     if (s === 'accepted') return <Badge className="bg-blue-500 text-white">Accepted</Badge>;
-    return <Badge className="bg-amber-500 text-white">Pending</Badge>;
+    return <Badge className="bg-amber-500 text-white">In Review</Badge>;
   };
 
   if (loading) {
@@ -199,7 +200,7 @@ const DetailPendaftarAdmin = () => {
             </div>
             <div className="flex items-center gap-3 flex-wrap">
               {renderStatusBadge(data.status)}
-              {data.status === 'pending' && (
+              {data.status && data.status.toLowerCase() === 'in_review' && (
                 <div className="flex gap-2">
                   <Button
                     onClick={openVerifikasiDialog}
