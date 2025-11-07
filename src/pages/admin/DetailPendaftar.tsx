@@ -43,7 +43,6 @@ const DetailPendaftarAdmin = () => {
         setReviewStatus(review);
         setIsReviewing(true);
         const result = await adminService.getPendaftarDetail(id);
-        console.log('DATA DARI API:', result);
         setData(result);
       } catch (e: any) {
         setError(e?.response?.data?.error || e?.message || 'Gagal memuat detail pendaftar');
