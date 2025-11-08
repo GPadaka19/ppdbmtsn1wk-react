@@ -1,5 +1,3 @@
-// src/components/sonner.tsx (ATAU di mana pun file ini berada)
-
 import { useTheme } from "next-themes";
 import { Toaster as Sonner, toast } from "sonner";
 
