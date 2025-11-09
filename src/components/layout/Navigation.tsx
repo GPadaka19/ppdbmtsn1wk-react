@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, User, LogOut } from 'lucide-react';
+import { Menu, X, User, LogOut, ShieldUser, UserCog } from 'lucide-react'; 
 import { Button } from '@/components/ui/button';
 import { authService } from '@/services/authService';
 
@@ -25,6 +25,23 @@ const Navigation = () => {
   };
 
   const isActive = (path: string) => location.pathname === path;
+
+  const RoleIcon = () => {
+    const role = user?.role;
+    const className = "w-4 h-4";
+
+    if (role === 'superadmin') {
+      return <ShieldUser className={className} />;
+    }
+    if (role === 'admin') {
+      return <UserCog className={className} />;
+    }
+    return <User className={className} />;
+  };
+
+  const dashboardPath = (user?.role === 'admin' || user?.role === 'superadmin')
+    ? '/admin/dashboard'
+    : '/siswa/dashboard';
 
   return (
     <nav className="bg-background border-b border-border sticky top-0 z-50 shadow-sm">
@@ -65,12 +82,14 @@ const Navigation = () => {
           <div className="hidden md:flex items-center space-x-2">
             {isAuth ? (
               <>
-                <Link to={user?.role === 'admin' ? '/admin/dashboard' : '/siswa/dashboard'}>
+                {/* --- PERBAIKAN DI SINI --- */}
+                <Link to={dashboardPath}>
                   <Button variant="ghost" size="sm" className="gap-2">
-                    <User className="w-4 h-4" />
+                    <RoleIcon /> {/* <-- Menggunakan helper ikon */}
                     {user?.nama || 'Dashboard'}
                   </Button>
                 </Link>
+                {/* --- AKHIR PERBAIKAN --- */}
                 <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2">
                   <LogOut className="w-4 h-4" />
                   Keluar
@@ -121,15 +140,17 @@ const Navigation = () => {
             <div className="pt-4 space-y-2">
               {isAuth ? (
                 <>
+                  {/* --- PERBAIKAN DI SINI --- */}
                   <Link
-                    to={user?.role === 'admin' ? '/admin/dashboard' : '/siswa/dashboard'}
+                    to={dashboardPath}
                     onClick={() => setIsOpen(false)}
                   >
                     <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
-                      <User className="w-4 h-4" />
+                      <RoleIcon /> {/* <-- Menggunakan helper ikon */}
                       {user?.nama || 'Dashboard'}
                     </Button>
                   </Link>
+                  {/* --- AKHIR PERBAIKAN --- */}
                   <Button
                     variant="outline"
                     size="sm"
