@@ -1,8 +1,17 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, User, LogOut } from 'lucide-react';
+// 1. Impor ikon baru untuk menu
+import { Menu, X, User, LogOut, ShieldUser, UserCog, LayoutDashboard } from 'lucide-react'; 
 import { Button } from '@/components/ui/button';
 import { authService } from '@/services/authService';
+// 2. Impor komponen DropdownMenu dari Shadcn/ui
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -25,6 +34,26 @@ const Navigation = () => {
   };
 
   const isActive = (path: string) => location.pathname === path;
+
+  const RoleIcon = () => {
+    const role = user?.role;
+    const className = "w-4 h-4"; // Ukuran ikon di tombol trigger
+
+    if (role === 'superadmin') {
+      return <ShieldUser className={className} />;
+    }
+    if (role === 'admin') {
+      return <UserCog className={className} />;
+    }
+    return <User className={className} />;
+  };
+
+  const dashboardPath = (user?.role === 'admin' || user?.role === 'superadmin')
+    ? '/admin/dashboard'
+    : '/siswa/dashboard';
+  
+  // (Asumsi) Path baru untuk manajemen admin
+  const manageAdminPath = "/admin/users"; 
 
   return (
     <nav className="bg-background border-b border-border sticky top-0 z-50 shadow-sm">
@@ -65,19 +94,46 @@ const Navigation = () => {
           <div className="hidden md:flex items-center space-x-2">
             {isAuth ? (
               <>
-                <Link to={user?.role === 'admin' ? '/admin/dashboard' : '/siswa/dashboard'}>
-                  <Button variant="ghost" size="sm" className="gap-2">
-                    <User className="w-4 h-4" />
-                    {user?.nama || 'Dashboard'}
-                  </Button>
-                </Link>
-                <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2">
-                  <LogOut className="w-4 h-4" />
-                  Keluar
-                </Button>
+                {/* --- 3. INI ADALAH DROPDOWN BARU (DESKTOP) --- */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    {/* Ini adalah tombol yang Anda lihat, sekarang menjadi pemicu */}
+                    <Button variant="ghost" size="sm" className="gap-2">
+                      <RoleIcon />
+                      {user?.nama || 'Menu'}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem asChild>
+                      <Link to={dashboardPath}>
+                        <LayoutDashboard className="mr-2 h-4 w-4" />
+                        <span>Dashboard</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    
+                    {/* Tampilkan link ini HANYA jika superadmin */}
+                    {user?.role === 'superadmin' && (
+                      <DropdownMenuItem asChild>
+                        <Link to={manageAdminPath}>
+                          <UserCog className="mr-2 h-4 w-4" />
+                          <span>Manage Admin</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
+                    
+                    <DropdownMenuSeparator />
+                    
+                    <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Keluar</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                {/* Tombol Logout lama dihapus dari sini karena sudah masuk dropdown */}
               </>
             ) : (
               <>
+                {/* ... (Tombol Login/Register tidak berubah) ... */}
                 <Link to="/login">
                   <Button variant="outline" size="sm">
                     Masuk
@@ -121,15 +177,32 @@ const Navigation = () => {
             <div className="pt-4 space-y-2">
               {isAuth ? (
                 <>
+                  {/* Tombol Dashboard (Mobile) */}
                   <Link
-                    to={user?.role === 'admin' ? '/admin/dashboard' : '/siswa/dashboard'}
+                    to={dashboardPath}
                     onClick={() => setIsOpen(false)}
                   >
                     <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
-                      <User className="w-4 h-4" />
+                      <RoleIcon />
                       {user?.nama || 'Dashboard'}
                     </Button>
                   </Link>
+                  
+                  {/* --- 4. TAMBAHKAN TOMBOL INI (MOBILE) --- */}
+                  {/* Tampilkan tombol ini HANYA jika superadmin */}
+                  {user?.role === 'superadmin' && (
+                    <Link
+                      to={manageAdminPath}
+                      onClick={() => setIsOpen(false)}
+                    >
+                      <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
+                        <UserCog className="w-4 h-4" />
+                        <span>Manage Admin</span>
+                      </Button>
+                    </Link>
+                  )}
+                  
+                  {/* Tombol Logout (Mobile) */}
                   <Button
                     variant="outline"
                     size="sm"
@@ -145,6 +218,7 @@ const Navigation = () => {
                 </>
               ) : (
                 <>
+                  {/* ... (Tombol Login/Register mobile tidak berubah) ... */}
                   <Link to="/login" onClick={() => setIsOpen(false)}>
                     <Button variant="outline" size="sm" className="w-full">
                       Masuk
