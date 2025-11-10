@@ -15,13 +15,15 @@ const Pengumuman = lazy(() => import('./pages/Pengumuman'));
 const Kontak = lazy(() => import('./pages/Kontak'));
 const Faq = lazy(() => import('./pages/Faq'));
 
-const DashboardSiswa = lazy(() => import('./pages/siswa/Dashboard'));
-const ProfilSiswa = lazy(() => import('./pages/siswa/Profil'));
-const BerkasSiswa = lazy(() => import('./pages/siswa/Berkas'));
+const DashboardSiswa = lazy(() => import('./pages/siswa/Dashboard.tsx'));
+const ProfilSiswa = lazy(() => import('./pages/siswa/Profil.tsx'));
+const BerkasSiswa = lazy(() => import('./pages/siswa/Berkas.tsx'));
 
 const DashboardAdmin = lazy(() => import('./pages/admin/Dashboard'));
 const PendaftarAdmin = lazy(() => import('./pages/admin/Pendaftar'));
 const DetailPendaftarAdmin = lazy(() => import('./pages/admin/DetailPendaftar'));
+
+const ManageAdmin = lazy(() => import('./pages/superadmin/Manage'));
 
 const router = createBrowserRouter([
   {
@@ -52,6 +54,7 @@ const router = createBrowserRouter([
           { path: '/admin/dashboard', element: <DashboardAdmin /> },
           { path: '/admin/pendaftar', element: <PendaftarAdmin /> },
           { path: '/admin/pendaftar/:id', element: <DetailPendaftarAdmin /> },
+          { path: '/superadmin/admin', element: <ManageAdmin /> },
         ],
       },
       
