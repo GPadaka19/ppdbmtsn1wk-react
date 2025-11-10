@@ -1,17 +1,19 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-// 1. Impor ikon baru untuk menu
-import { Menu, X, User, LogOut, ShieldUser, UserCog, LayoutDashboard } from 'lucide-react'; 
+import { Menu, X, User, LogOut, ShieldUser, UserCog, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { authService } from '@/services/authService';
-// 2. Impor komponen DropdownMenu dari Shadcn/ui
+
+// 1. Impor komponen NavigationMenu
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from "@/components/ui/navigation-menu";
+import { ListItem } from "@/components/ui/list-item";
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -37,7 +39,7 @@ const Navigation = () => {
 
   const RoleIcon = () => {
     const role = user?.role;
-    const className = "w-4 h-4"; // Ukuran ikon di tombol trigger
+    const className = "w-4 h-4"; 
 
     if (role === 'superadmin') {
       return <ShieldUser className={className} />;
@@ -52,8 +54,7 @@ const Navigation = () => {
     ? '/admin/dashboard'
     : '/siswa/dashboard';
   
-  // (Asumsi) Path baru untuk manajemen admin
-  const manageAdminPath = "/admin/users"; 
+  const manageAdminPath = "/superadmin/admin"; 
 
   return (
     <nav className="bg-background border-b border-border sticky top-0 z-50 shadow-sm">
@@ -94,42 +95,40 @@ const Navigation = () => {
           <div className="hidden md:flex items-center space-x-2">
             {isAuth ? (
               <>
-                {/* --- 3. INI ADALAH DROPDOWN BARU (DESKTOP) --- */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    {/* Ini adalah tombol yang Anda lihat, sekarang menjadi pemicu */}
-                    <Button variant="ghost" size="sm" className="gap-2">
-                      <RoleIcon />
-                      {user?.nama || 'Menu'}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem asChild>
-                      <Link to={dashboardPath}>
-                        <LayoutDashboard className="mr-2 h-4 w-4" />
-                        <span>Dashboard</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    
-                    {/* Tampilkan link ini HANYA jika superadmin */}
-                    {user?.role === 'superadmin' && (
-                      <DropdownMenuItem asChild>
-                        <Link to={manageAdminPath}>
-                          <UserCog className="mr-2 h-4 w-4" />
-                          <span>Manage Admin</span>
-                        </Link>
-                      </DropdownMenuItem>
-                    )}
-                    
-                    <DropdownMenuSeparator />
-                    
-                    <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                      <LogOut className="mr-2 h-4 w-4" />
-                      <span>Keluar</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                {/* Tombol Logout lama dihapus dari sini karena sudah masuk dropdown */}
+                {/* --- 3. INI ADALAH NAVIGATIONMENU BARU (DESKTOP) --- */}
+                <NavigationMenu>
+                  <NavigationMenuList>
+                    <NavigationMenuItem>
+                      {/* Ini adalah pemicu yang di-hover */}
+                      <NavigationMenuTrigger className="gap-2 bg-transparent hover:bg-accent focus:bg-accent text-sm font-medium h-10 px-4 py-2">
+                        <RoleIcon />
+                        {user?.nama || 'Menu'}
+                      </NavigationMenuTrigger>
+                      {/* Ini adalah konten yang muncul saat di-hover */}
+                      <NavigationMenuContent>
+                        <ul className="grid w-[200px] gap-3 p-4">
+                          <ListItem to={dashboardPath} title="Dashboard">
+                            <LayoutDashboard className="h-4 w-4" />
+                          </ListItem>
+
+                          {/* Tampilkan link ini HANYA jika superadmin */}
+                          {user?.role === 'superadmin' && (
+                            <ListItem to={manageAdminPath} title="Manage Admin">
+                              <UserCog className="h-4 w-4" />
+                            </ListItem>
+                          )}
+                          
+                          {/* Garis pemisah */}
+                          <li className="h-px w-full bg-border my-1"></li>
+
+                          <ListItem onClick={handleLogout} title="Keluar" className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                            <LogOut className="h-4 w-4" />
+                          </ListItem>
+                        </ul>
+                      </NavigationMenuContent>
+                    </NavigationMenuItem>
+                  </NavigationMenuList>
+                </NavigationMenu>
               </>
             ) : (
               <>
@@ -157,7 +156,7 @@ const Navigation = () => {
           </button>
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile Menu (Tidak berubah, ini sudah benar menggunakan klik) */}
         {isOpen && (
           <div className="md:hidden py-4 space-y-2 border-t border-border">
             {publicLinks.map((link) => (
@@ -177,7 +176,6 @@ const Navigation = () => {
             <div className="pt-4 space-y-2">
               {isAuth ? (
                 <>
-                  {/* Tombol Dashboard (Mobile) */}
                   <Link
                     to={dashboardPath}
                     onClick={() => setIsOpen(false)}
@@ -187,9 +185,6 @@ const Navigation = () => {
                       {user?.nama || 'Dashboard'}
                     </Button>
                   </Link>
-                  
-                  {/* --- 4. TAMBAHKAN TOMBOL INI (MOBILE) --- */}
-                  {/* Tampilkan tombol ini HANYA jika superadmin */}
                   {user?.role === 'superadmin' && (
                     <Link
                       to={manageAdminPath}
@@ -201,8 +196,6 @@ const Navigation = () => {
                       </Button>
                     </Link>
                   )}
-                  
-                  {/* Tombol Logout (Mobile) */}
                   <Button
                     variant="outline"
                     size="sm"
@@ -218,7 +211,6 @@ const Navigation = () => {
                 </>
               ) : (
                 <>
-                  {/* ... (Tombol Login/Register mobile tidak berubah) ... */}
                   <Link to="/login" onClick={() => setIsOpen(false)}>
                     <Button variant="outline" size="sm" className="w-full">
                       Masuk
