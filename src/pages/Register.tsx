@@ -5,7 +5,7 @@ import Footer from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { CheckCircle2 } from 'lucide-react';
+import { MailCheck } from 'lucide-react';
 import Step1DataDiri from '@/components/register/Step1DataDiri';
 import Step2Alamat from '@/components/register/Step2Alamat';
 import Step3AsalSekolah from '@/components/register/Step3AsalSekolah';
@@ -54,45 +54,43 @@ const Register = () => {
 
   const CurrentStepComponent = steps[currentStep - 1].component;
 
+  // --- INI BAGIAN YANG DIUBAH ---
   if (isSubmitted) {
     return (
       <div className="min-h-screen bg-background">
         <Navigation />
         <div className="section-padding">
           <div className="container-custom max-w-2xl">
-            <Card className="border-success">
+            <Card className="border-primary">
               <CardHeader className="text-center">
-                <div className="w-20 h-20 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle2 className="w-12 h-12 text-success" />
+                <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <MailCheck className="w-12 h-12 text-primary" />
                 </div>
-                <CardTitle className="text-3xl text-success">Pendaftaran Berhasil!</CardTitle>
+                <CardTitle className="text-3xl text-primary">Pendaftaran Hampir Selesai!</CardTitle>
                 <CardDescription className="text-lg">
-                  Selamat, pendaftaran Anda telah berhasil disimpan
+                  Satu langkah lagi. Silakan cek email Anda untuk verifikasi.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="bg-accent/10 p-6 rounded-lg text-center">
-                  <p className="text-sm text-foreground mb-2">Nomor Pendaftaran Anda</p>
-                  <p className="text-3xl font-bold text-primary">{noPendaftaran}</p>
+                  <p className="text-sm text-foreground mb-2">Email Pendaftaran Anda</p>
+                  <p className="text-2xl font-bold text-primary">{formData.email}</p>
                   <p className="text-sm text-foreground mt-2">
-                    Simpan nomor ini untuk tracking status pendaftaran
+                    Kami telah mengirimkan link verifikasi ke alamat email ini.
                   </p>
                 </div>
 
                 <div className="space-y-3 text-sm text-foreground">
                   <p className="font-medium text-foreground">Langkah Selanjutnya:</p>
                   <ul className="list-disc list-inside space-y-2 ml-2">
-                    <li>Login ke dashboard untuk melihat status pendaftaran</li>
-                    <li>Pastikan semua berkas sudah terupload dengan benar</li>
-                    <li>Tunggu proses verifikasi dari admin (1-3 hari kerja)</li>
-                    <li>Cek email Anda secara berkala untuk update status</li>
+                    <li>Buka email Anda (cek folder spam jika perlu).</li>
+                    <li>Klik link verifikasi untuk mengaktifkan akun Anda.</li>
+                    <li>Setelah verifikasi, Anda akan mendapatkan password.</li>
+                    <li>Login ke dashboard untuk melengkapi berkas.</li>
                   </ul>
                 </div>
 
                 <div className="flex flex-col gap-3">
-                  <Link to="/login">
-                    <Button className="w-full btn-primary">Login ke Dashboard</Button>
-                  </Link>
                   <Link to="/">
                     <Button variant="outline" className="w-full">
                       Kembali ke Beranda
@@ -107,6 +105,8 @@ const Register = () => {
       </div>
     );
   }
+  // --- AKHIR BAGIAN YANG DIUBAH ---
+
 
   return (
     <div className="min-h-screen bg-background">
