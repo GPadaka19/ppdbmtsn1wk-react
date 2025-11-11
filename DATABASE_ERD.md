@@ -14,7 +14,7 @@ erDiagram
         varchar password_hash
         varchar temp_password
         varchar nama
-        varchar role
+        varchar role "('siswa', 'admin', 'superadmin')"
         timestamp created_at
         timestamp updated_at
     }
@@ -117,11 +117,13 @@ erDiagram
         text keterangan
         uuid admin_id FK
         timestamp tanggal_verifikasi
+        varchar in_review_by "Nama admin/UUID"
+        timestamp in_review_at "Waktu mulai review"
         timestamp created_at
         timestamp updated_at
     }
 
-    %% Relationships
+    %% Relationships (Aplikasi Utama)
     users ||--o{ siswa : "has"
     siswa ||--|| alamat_siswa : "has"
     siswa ||--|| sekolah_asal : "has"
@@ -129,6 +131,34 @@ erDiagram
     siswa ||--|| berkas_siswa : "has"
     siswa ||--|| status_pendaftaran : "has"
     users ||--o{ status_pendaftaran : "verifies"
+
+    %% --- Database Wilayah (Eksternal/Shared) ---
+    %% Direferensikan oleh GET /api/wilayah/*
+    provinsi {
+        char id PK
+        varchar nama
+    }
+    kota {
+        char id PK
+        char provinsi_id FK
+        varchar nama
+    }
+    kecamatan {
+        char id PK
+        char kota_id FK
+        varchar nama
+    }
+    kelurahan {
+        char id PK
+        char kecamatan_id FK
+        varchar nama
+    }
+
+    provinsi ||--o{ kota : "has"
+    kota ||--o{ kecamatan : "has"
+    kecamatan ||--o{ kelurahan : "has"
+
+    note "alamat_siswa menggunakan nama wilayah denormalized. Entitas provinsi, kota, dll. adalah DB terpisah yang di-query oleh API."
 ```
 
 ## Database Schema (PostgreSQL)
