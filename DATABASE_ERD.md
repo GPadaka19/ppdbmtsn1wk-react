@@ -141,13 +141,19 @@ CREATE TABLE users (
     password_hash VARCHAR(255) NOT NULL,
     temp_password VARCHAR(5), -- Temporary password for email sending
     nama VARCHAR(255) NOT NULL,
-    role VARCHAR(20) NOT NULL CHECK (role IN ('siswa', 'admin')),
+    role VARCHAR(20) NOT NULL CHECK (role IN ('siswa', 'admin', 'superadmin')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_role ON users(role);
+
+ALTER TABLE users
+ADD COLUMN IF NOT EXISTS verification_token VARCHAR(64) UNIQUE,
+ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT false;
+
+CREATE INDEX IF NOT EXISTS idx_users_verification_token ON users(verification_token);
 ```
 
 ### 2. Siswa Table
@@ -597,8 +603,11 @@ SELECT setval('siswa_no_seq', 1, false);
 
 - `POST /api/admin/pick-pendaftar` → Pola 1 (ambil berikutnya / atomic lock)
 - `POST /api/admin/start-review/:id` → Pola 2 (lock by ID; 409 jika sudah diambil)
-- `POST /api/admin/complete/:id` → Verifikasi/Reject + clear lock
-- `POST /api/admin/release-stale` → Dipakai cron untuk auto‑release lock idle
+- `PUT /api/admin/verifikasi/:id` → Verifikasi/Reject + clear lock
+- `POST /api/admin/release-stale` → Dipakai cron untuk auto-release lock idle
+- `GET /api/admin/pendaftar/summary` (BARU) → AdminPendaftarSummaryHandler. Melakukan query agregat (COUNT, GROUP BY) pada status_pendaftaran.
+- `PUT /api/admin/keepalive/:id` (BARU) → AdminKeepAliveHandler. Memperbarui in_review_at agar lock tidak dirilis oleh cron.
+- `POST /api/admin/cancel-review/:id` (BARU) → AdminCancelReviewHandler. Melepas lock secara manual, mengembalikan status ke 'pending'.
 
 - `GET /api/wilayah/provinsi` → Query ke database provinsi
 - `GET /api/wilayah/kota?provinsi_id=X` → Query ke database wilayah terpisah
