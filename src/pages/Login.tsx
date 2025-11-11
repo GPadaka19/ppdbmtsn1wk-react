@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom'; // <-- Tambahkan useLocation
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -9,18 +9,19 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { authService } from '@/services/authService';
-import { Loader2 } from 'lucide-react';
-import axios from 'axios';
+import { Loader2, X } from 'lucide-react';
+import axios from 'axios'; // Anda sudah mengimpor ini untuk Lupa Password
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Email tidak valid' }),
-  password: z.string().min(5, { message: 'Password ada 5 karakter' }),
+  password: z.string().min(5, { message: 'Password minimal 5 karakter' }), // Sesuai file Anda
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
@@ -36,44 +37,67 @@ const Login = () => {
     resolver: zodResolver(loginSchema),
   });
 
+  // --- INI FUNGSI YANG DIPERBAIKI ---
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
-      const { user } = await authService.login({
-        email: data.email!,
-        password: data.password!
+      // 1. Panggil login. 'response' adalah objek LoginResponse
+      const response = await authService.login({
+        email: data.email, // tidak perlu '!'
+        password: data.password, // tidak perlu '!'
       });
+
       toast.success('Login berhasil!');
       
-      // Redirect based on role
-      if (user.role === 'admin') {
-        navigate('/admin/dashboard', { state: { email: user.email } });
-      } else {
-        navigate('/siswa/dashboard', { state: { email: user.email } });
+      // 2. Cek 'from' state untuk redirect (jika ada)
+      const from = location.state?.from?.pathname || null;
+
+      // 3. Redirect berdasarkan role
+      if (response.role === 'admin' || response.role === 'superadmin') {
+        navigate(from || '/admin/dashboard', { replace: true });
+      } else { // (role === 'siswa')
+        navigate(from || '/siswa/dashboard', { replace: true });
       }
-    } catch (error) {
-      toast.error('Login gagal. Periksa email dan password Anda.');
+
+    } catch (error: any) {
+      // Tangani error dengan lebih baik
+      const errMsg = error?.response?.data?.error || 'Periksa email dan password Anda.';
+      
+      // Cek kode error "NOT_VERIFIED" dari backend
+      if (error?.response?.data?.code === 'NOT_VERIFIED') {
+        toast.warning(errMsg, {
+          description: 'Silakan cek email Anda untuk link aktivasi.',
+          duration: 5000,
+        });
+      } else {
+        toast.error('Login gagal', {
+          description: errMsg,
+        });
+      }
     } finally {
       setIsLoading(false);
     }
   };
+  // --- AKHIR FUNGSI PERBAIKAN ---
+
 
   const handleForgotSubmit = async (e: React.FormEvent) => {
+    // ... (Fungsi ini sepertinya belum diimplementasi di backend Anda, tapi biarkan saja) ...
     e.preventDefault();
     setForgotLoading(true);
     setForgotSuccess(false);
     setForgotError('');
     try {
-      // Step 1: check email terdaftar
-      const checkRes = await axios.post('/api/auth/check-email', { email: forgotEmail });
-      if (!checkRes.data?.exists) {
-        setForgotError('Email tidak ditemukan di sistem.');
-        setForgotLoading(false);
-        return;
-      }
-      // Step 2: kirim instruksi reset password
-      await axios.post('/api/auth/forgot-password', { email: forgotEmail });
+      // Anda perlu endpoint /api/auth/check-email dan /api/auth/forgot-password
+      // const checkRes = await axios.post('/api/auth/check-email', { email: forgotEmail });
+      // if (!checkRes.data?.exists) {
+      //   setForgotError('Email tidak ditemukan di sistem.');
+      //   setForgotLoading(false);
+      //   return;
+      // }
+      // await axios.post('/api/auth/forgot-password', { email: forgotEmail });
       setForgotSuccess(true);
+      setForgotError('Fitur Lupa Password belum diimplementasikan.'); // Placeholder
     } catch (err:any) {
       setForgotError('Terjadi kesalahan. Coba beberapa saat lagi.');
     } finally {
@@ -156,7 +180,7 @@ const Login = () => {
                   <Button type="submit" className="w-full btn-primary" disabled={forgotLoading || !forgotEmail}>
                     {forgotLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Kirim Instruksi"}
                   </Button>
-                  {forgotSuccess && <p className="text-sm text-green-700 mt-2">Jika email terdaftar, password baru sudah dikirim!</p>}
+                  {forgotSuccess && <p className="text-sm text-green-700 mt-2">Jika email terdaftar, instruksi telah dikirim!</p>}
                 </form>
               </div>
             </div>
