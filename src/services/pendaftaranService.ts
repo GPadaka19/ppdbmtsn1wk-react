@@ -1,10 +1,14 @@
 import { api } from '@/lib/api';
 
+export interface InitialRegisterData {
+  nama_lengkap: string;
+  nisn: string;
+  email: string;
+}
+
 export interface PendaftaranData {
   // Step 1: Data Diri
-  nisn: string;
   nik: string;
-  nama_lengkap: string;
   tempat_lahir: string;
   tanggal_lahir: string;
   jenis_kelamin: 'L' | 'P';
@@ -22,7 +26,6 @@ export interface PendaftaranData {
   provinsi: string;
   kode_pos: string;
   no_hp: string;
-  email: string;
   
   // Step 3: Data Asal Sekolah
   asal_sekolah: string;
@@ -67,7 +70,7 @@ export interface PendaftaranData {
 export interface RegisterResponse {
   message: string;
   no_pendaftaran: string;
-  id: string; // <-- Ini adalah UUID siswa_id yang WAJIB ada
+  id: string;
 }
 
 export interface StatusPendaftaran {
@@ -81,10 +84,24 @@ export interface StatusPendaftaran {
 
 export const pendaftaranService = {
   /**
-   * Mengirim data teks pendaftaran (Step 1-4)
+   * Register Awal (Hanya Nama, NISN, Email)
    */
-  async submitPendaftaran(data: PendaftaranData): Promise<RegisterResponse> {
+  async registerInitial(data: InitialRegisterData): Promise<RegisterResponse> {
     const response = await api.post('/siswa/pendaftaran', data);
+    return response.data;
+  },
+
+  async getProfil(): Promise<any> { // Return type bisa disesuaikan dengan PendaftaranData + extra fields
+    const response = await api.get('/siswa/profil');
+    return response.data;
+  },
+
+  /**
+   * Mengirim Update Data Lengkap (Step 1-6)
+   */
+  async updateDataLengkap(data: PendaftaranData) {
+    // Gunakan PUT ke endpoint protected
+    const response = await api.put('/siswa/pendaftaran', data);
     return response.data;
   },
 

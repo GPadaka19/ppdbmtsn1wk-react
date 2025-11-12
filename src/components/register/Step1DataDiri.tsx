@@ -12,9 +12,7 @@ import { saveDraftStep, loadDraftStep } from '@/utils/pendaftaranStorage';
 import { cekService } from '@/services/cekService';
 
 const schema = z.object({
-  nisn: z.string().length(10, 'NISN harus 10 digit').regex(/^[0-9]{10}$/, 'NISN harus berupa 10 digit angka'),
   nik: z.string().length(16, 'NIK harus 16 digit').regex(/^[0-9]{16}$/, 'NIK harus berupa 16 digit angka'),
-  nama_lengkap: z.string().min(3, 'Nama minimal 3 karakter'),
   tempat_lahir: z.string().min(2, 'Tempat lahir minimal 2 karakter').regex(/^[a-zA-Z\s]+$/, 'Tempat lahir hanya boleh berisi huruf dan spasi'),
   tanggal_lahir: z
     .string()
@@ -125,10 +123,6 @@ const Step1DataDiri = ({ data, onNext }: Props) => {
     pendaftaranStorage.saveData(formData);
 
     let isError = false;
-    if (!formData.nisn) {
-      setError('nisn', { type: 'manual', message: 'NISN wajib diisi' });
-      isError = true;
-    }
     if (!formData.nik) {
       setError('nik', { type: 'manual', message: 'NIK wajib diisi' });
       isError = true;
@@ -147,15 +141,9 @@ const Step1DataDiri = ({ data, onNext }: Props) => {
     }
 
     // Cek NISN & NIK paralel
-    const [nisnTaken, nikTaken] = await Promise.all([
-      cekService.cekNisn(formData.nisn),
-      cekService.cekNik(formData.nik)
-    ]);
+    const nikTaken = await cekService.cekNik(formData.nik);
+
     isError = false;
-    if (nisnTaken) {
-      setError('nisn', { type: 'manual', message: 'NISN sudah terdaftar' });
-      isError = true;
-    }
     if (nikTaken) {
       setError('nik', { type: 'manual', message: 'NIK sudah terdaftar' });
       isError = true;
@@ -196,21 +184,10 @@ const Step1DataDiri = ({ data, onNext }: Props) => {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="grid md:grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="nisn">NISN *</Label>
-          <Input id="nisn" {...register('nisn')} placeholder="1234567890" />
-          {errors.nisn && <p className="text-sm text-destructive mt-1">{errors.nisn.message}</p>}
-        </div>
-        <div>
           <Label htmlFor="nik">NIK *</Label>
           <Input id="nik" {...register('nik')} placeholder="3201234567890123" />
           {errors.nik && <p className="text-sm text-destructive mt-1">{errors.nik.message}</p>}
         </div>
-      </div>
-
-      <div>
-        <Label htmlFor="nama_lengkap">Nama Lengkap *</Label>
-        <Input id="nama_lengkap" {...register('nama_lengkap')} />
-        {errors.nama_lengkap && <p className="text-sm text-destructive mt-1">{errors.nama_lengkap.message}</p>}
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
