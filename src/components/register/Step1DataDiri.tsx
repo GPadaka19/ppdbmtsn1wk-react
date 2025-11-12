@@ -18,14 +18,49 @@ const schema = z.object({
   tempat_lahir: z.string().min(2, 'Tempat lahir minimal 2 karakter').regex(/^[a-zA-Z\s]+$/, 'Tempat lahir hanya boleh berisi huruf dan spasi'),
   tanggal_lahir: z
     .string()
+    // 1. Validasi Format (YYYY-MM-DD atau DD/MM/YYYY)
     .refine(
       (v) => /^\d{4}-\d{2}-\d{2}$/.test(v) || /^(\d{2})[\/-](\d{2})[\/-](\d{4})$/.test(v),
-      { message: 'Tanggal lahir tidak valid' }
-    ),
+      { message: 'Format tanggal lahir tidak valid' }
+    )
+    // 2. Validasi Umur Maksimal 15 Tahun per 1 Juli
+    .refine((v) => {
+      // Normalisasi string tanggal ke object Date
+      let dateStr = v.replace(/-/g, '/');
+      if (!/^\d{4}\/\d{2}\/\d{2}$/.test(dateStr)) {
+        // Jika format dd/mm/yyyy, ubah ke yyyy/mm/dd agar bisa diparse
+        const [dd, mm, yyyy] = dateStr.split('/');
+        dateStr = `${yyyy}/${mm}/${dd}`;
+      }
+      const birthDate = new Date(dateStr);
+      
+      // Tentukan tanggal patokan (Cutoff): 1 Juli Tahun Ini
+      const currentYear = new Date().getFullYear();
+      const cutoffDate = new Date(currentYear, 6, 1); // Bulan 6 adalah Juli (index 0-11)
+
+      // Hitung Umur
+      let age = cutoffDate.getFullYear() - birthDate.getFullYear();
+      const m = cutoffDate.getMonth() - birthDate.getMonth();
+      
+      // Jika bulan sekarang < bulan lahir, atau bulan sama tapi tanggal belum lewat
+      // maka umur belum bertambah, kurangi 1
+      if (m < 0 || (m === 0 && cutoffDate.getDate() < birthDate.getDate())) {
+        age--;
+      }
+
+      // Validasi: Umur harus <= 15
+      return age <= 15;
+    }, { message: 'Umur maksimal 15 tahun pada tanggal 1 Juli tahun ini' }),
   jenis_kelamin: z.enum(['L', 'P'], { required_error: 'Jenis kelamin wajib dipilih' }),
-  agama: z.string().min(1, 'Agama wajib dipilih'),
+  agama: z.string({ required_error: 'Agama wajib diisi' }).min(1, 'Agama wajib diisi'),
   anak_ke: z.coerce.number().min(1, 'Anak ke minimal 1'),
-  jumlah_saudara: z.coerce.number().min(0, 'Jumlah saudara minimal 0'),
+  jumlah_saudara: z.union([
+    z.string().transform((val) => (val === '' ? undefined : Number(val))), 
+    z.number()
+  ]).pipe(
+    z.number({ required_error: "Jumlah saudara wajib diisi" })
+    .min(0, "Jumlah saudara wajib di isi, minimal 0")
+  ),
 });
 
 // Semua validasi Zod dinonaktifkan sementara, semua field optional
@@ -69,6 +104,20 @@ const Step1DataDiri = ({ data, onNext }: Props) => {
     });
     return () => subscription.unsubscribe();
   }, [watch]);
+
+  const jenisKelaminOptions = [
+    'L',
+    'P',
+  ];
+
+  const agamaOptions = [
+    'Islam',
+    'Kristen',
+    'Katolik',
+    'Hindu',
+    'Buddha',
+    'Konghucu',
+  ];
 
   // Custom onSubmit dengan cek unique field ke API
   const onSubmit = async (formData: FormData) => {
@@ -192,25 +241,19 @@ const Step1DataDiri = ({ data, onNext }: Props) => {
               <SelectValue placeholder="Pilih" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="L">Laki-laki</SelectItem>
-              <SelectItem value="P">Perempuan</SelectItem>
+            {jenisKelaminOptions.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
             </SelectContent>
           </Select>
           {errors.jenis_kelamin && <p className="text-sm text-destructive mt-1">{errors.jenis_kelamin.message}</p>}
         </div>
         <div>
           <Label htmlFor="agama">Agama *</Label>
-          <Select onValueChange={(value) => setValue('agama', value)} defaultValue={data.agama}>
+          <Select onValueChange={(value) => setValue('agama', value, { shouldValidate: true })} defaultValue={data.agama || ""}>
             <SelectTrigger>
               <SelectValue placeholder="Pilih" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Islam">Islam</SelectItem>
-              <SelectItem value="Kristen">Kristen</SelectItem>
-              <SelectItem value="Katolik">Katolik</SelectItem>
-              <SelectItem value="Hindu">Hindu</SelectItem>
-              <SelectItem value="Buddha">Buddha</SelectItem>
-              <SelectItem value="Konghucu">Konghucu</SelectItem>
+              {agamaOptions.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
             </SelectContent>
           </Select>
           {errors.agama && <p className="text-sm text-destructive mt-1">{errors.agama.message}</p>}
