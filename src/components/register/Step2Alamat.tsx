@@ -79,7 +79,7 @@ const Step2Alamat = ({ data, onNext, onPrev }: Props) => {
 
   const handleProvinsiChange = (provinsi: Provinsi | null) => {
     if (provinsi) {
-      setValue('provinsi', provinsi.nama);
+      setValue('provinsi', provinsi.nama, { shouldValidate: true });
       setValue('provinsi_id', provinsi.id);
     } else {
       setValue('provinsi', '');
@@ -89,7 +89,7 @@ const Step2Alamat = ({ data, onNext, onPrev }: Props) => {
 
   const handleKotaChange = (kota: Kota | null) => {
     if (kota) {
-      setValue('kabupaten', kota.nama);
+      setValue('kabupaten', kota.nama, { shouldValidate: true });
       setValue('kota_id', kota.id);
     } else {
       setValue('kabupaten', '');
@@ -99,7 +99,7 @@ const Step2Alamat = ({ data, onNext, onPrev }: Props) => {
 
   const handleKecamatanChange = (kecamatan: Kecamatan | null) => {
     if (kecamatan) {
-      setValue('kecamatan', kecamatan.nama);
+      setValue('kecamatan', kecamatan.nama, { shouldValidate: true });
       setValue('kecamatan_id', kecamatan.id);
     } else {
       setValue('kecamatan', '');
@@ -109,7 +109,7 @@ const Step2Alamat = ({ data, onNext, onPrev }: Props) => {
 
   const handleKelurahanChange = (kelurahan: Kelurahan | null) => {
     if (kelurahan) {
-      setValue('desa', kelurahan.nama);
+      setValue('desa', kelurahan.nama, { shouldValidate: true });
       setValue('kelurahan_id', kelurahan.id);
     } else {
       setValue('desa', '');
