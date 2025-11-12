@@ -270,7 +270,7 @@ const Step4OrangTua = ({ data, onNext, onPrev }: Props) => {
           </div>
           <div>
             <Label>Penghasilan *</Label>
-            <Select onValueChange={(v) => setValue('penghasilan_ibu', v)} defaultValue={data.penghasilan_ibu}>
+            <Select onValueChange={(v) => setValue('penghasilan_ibu', v, { shouldValidate: true })} defaultValue={data.penghasilan_ibu || ""}>
               <SelectTrigger><SelectValue placeholder="Pilih" /></SelectTrigger>
               <SelectContent>
                 {penghasilanOptions.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
@@ -280,7 +280,7 @@ const Step4OrangTua = ({ data, onNext, onPrev }: Props) => {
           </div>
           <div>
             <Label>Pendidikan *</Label>
-            <Select onValueChange={(v) => setValue('pendidikan_ibu', v)} defaultValue={data.pendidikan_ibu}>
+            <Select onValueChange={(v) => setValue('pendidikan_ibu', v, { shouldValidate: true })} defaultValue={data.pendidikan_ibu || ""}>
               <SelectTrigger><SelectValue placeholder="Pilih" /></SelectTrigger>
               <SelectContent>
                 {pendidikanOptions.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
