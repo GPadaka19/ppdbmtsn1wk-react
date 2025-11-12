@@ -55,12 +55,19 @@ export interface PendaftaranData {
   hubungan_wali?: string;
   
   // Step 5: Upload Berkas (file paths/URLs)
-  foto?: string;
-  akta_kelahiran?: string;
-  ijazah?: string;
-  kartu_keluarga?: string;
-  ktp_ortu?: string;
-  surat_pernyataan?: string;
+  foto?: File;
+  akta?: File;
+  ijazah?: File;
+  kk?: File;
+  ktp?: File;
+  surat?: File;
+}
+
+// Tipe data yang dikembalikan oleh API Pendaftaran
+export interface RegisterResponse {
+  message: string;
+  no_pendaftaran: string;
+  id: string; // <-- Ini adalah UUID siswa_id yang WAJIB ada
 }
 
 export interface StatusPendaftaran {
@@ -73,38 +80,39 @@ export interface StatusPendaftaran {
 }
 
 export const pendaftaranService = {
-  async submitPendaftaran(data: PendaftaranData): Promise<{ message: string; no_pendaftaran: string }> {
+  /**
+   * Mengirim data teks pendaftaran (Step 1-4)
+   */
+  async submitPendaftaran(data: PendaftaranData): Promise<RegisterResponse> {
     const response = await api.post('/siswa/pendaftaran', data);
     return response.data;
   },
 
-  async getStatus(): Promise<StatusPendaftaran> {
-    // Fallback jika BE blm ada endpoint /siswa/status
-    return {
-      id: '-',
-      no_pendaftaran: '-',
-      nama: '-',
-      status: 'pending',
-      tanggal_daftar: new Date().toISOString(),
-      keterangan: 'Fitur status belum tersedia - tunggu backend.'
-    };
-    // Jika sudah ada:
-    // const response = await api.get('/siswa/status');
-    // return response.data;
-  },
+  /**
+   * Mengirim file berkas (Step 5)
+   * Ini adalah endpoint publik yang memerlukan siswa_id
+   */
+  async uploadBerkas(siswaId: string, files: Partial<PendaftaranData>) {
+    const formData = new FormData();
+    
+    // WAJIB: Kirim siswa_id agar backend tahu ini file milik siapa
+    formData.append('siswa_id', siswaId); 
 
-  async uploadFile(file: File, type: string): Promise<{ url: string }> {
-    // Fallback - backend blm ada endpoint upload
-    return {
-      url: `https://mock-storage.com/${type}/${file.name}`,
-    };
-    // Jika sudah ada:
-    // const formData = new FormData();
-    // formData.append('file', file);
-    // formData.append('type', type);
-    // const response = await api.post('/siswa/upload', formData, {
-    //   headers: { 'Content-Type': 'multipart/form-data' },
-    // });
-    // return response.data;
-  },
+    // Tambahkan file ke form data hanya jika ada
+    if (files.foto) formData.append('foto', files.foto);
+    if (files.akta) formData.append('akta', files.akta);
+    if (files.ijazah) formData.append('ijazah', files.ijazah);
+    if (files.kk) formData.append('kk', files.kk);
+    if (files.ktp) formData.append('ktp', files.ktp);
+    if (files.surat) formData.append('surat', files.surat);
+
+    // Kirim ke endpoint publik
+    const response = await api.post('/siswa/berkas', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    
+    return response.data;
+  }
 };

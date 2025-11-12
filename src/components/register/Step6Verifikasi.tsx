@@ -4,7 +4,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
-import { PendaftaranData, pendaftaranService } from '@/services/pendaftaranService';
+import { PendaftaranData, pendaftaranService, RegisterResponse } from '@/services/pendaftaranService';
 import { pendaftaranStorage, clearAllDrafts } from '@/utils/pendaftaranStorage';
 
 interface Props {
@@ -19,6 +19,7 @@ const Step6Verifikasi = ({ data, onPrev, onSubmitSuccess }: Props) => {
   const [allData, setAllData] = useState<Partial<PendaftaranData>>({});
 
   useEffect(() => {
+    // Ambil semua data (termasuk file) dari localStorage/state
     const storedData = pendaftaranStorage.getData();
     setAllData(storedData);
   }, []);
@@ -34,18 +35,63 @@ const Step6Verifikasi = ({ data, onPrev, onSubmitSuccess }: Props) => {
     }
 
     setIsLoading(true);
+    
+    // Alur Baru: 2 Langkah (Register Teks -> Upload File)
     try {
-      const result = await pendaftaranService.submitPendaftaran(allData as PendaftaranData);
-      toast.success(result.message);
-      clearAllDrafts();
-      onSubmitSuccess(result.no_pendaftaran);
-    } catch (error) {
-      toast.error('Gagal menyimpan pendaftaran');
+      // 1. REQUEST PERTAMA: Register Data Teks
+      // Kita pisahkan data File dari data Teks sebelum mengirim
+      const { foto, akta, ijazah, kk, ktp, surat, ...textData } = allData;
+      
+      const registerResponse: RegisterResponse = await pendaftaranService.submitPendaftaran(textData as PendaftaranData);
+      
+      // Ambil ID siswa dari respons (ini WAJIB ada dari backend)
+      const siswaId = registerResponse.id; 
+      const noPendaftaran = registerResponse.no_pendaftaran;
+
+      if (!siswaId) {
+        throw new Error("Respons registrasi tidak mengembalikan 'id' siswa.");
+      }
+
+      // 2. REQUEST KEDUA: Upload Berkas (Gunakan siswaId)
+      // Kumpulkan file yang ada
+      const filesToUpload: Partial<PendaftaranData> = {
+          foto: allData.foto,
+          akta: allData.akta,
+          ijazah: allData.ijazah,
+          kk: allData.kk,
+          ktp: allData.ktp,
+          surat: allData.surat
+      };
+
+      // Cek apakah ada file yang akan diupload
+      const hasFiles = Object.values(filesToUpload).some(file => file);
+
+      if (hasFiles) {
+        try {
+          await pendaftaranService.uploadBerkas(siswaId, filesToUpload);
+        } catch (uploadErr) {
+          console.error("Gagal upload berkas:", uploadErr);
+          // Pendaftaran berhasil, tapi upload gagal. Beri tahu user.
+          toast.warning("Pendaftaran berhasil, namun beberapa berkas gagal diunggah. Silakan upload ulang di Dashboard Siswa.");
+        }
+      }
+      
+      // 3. Sukses Total
+      clearAllDrafts(); // Hapus draf dari localStorage
+      onSubmitSuccess(noPendaftaran); // Pindah ke halaman sukses
+
+    } catch (error: any) {
+      console.error("Gagal mendaftar:", error);
+      toast.error('Gagal melakukan pendaftaran', {
+        description: error.response?.data?.error || error.message || "Terjadi kesalahan server.",
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
+  // --- Sisa JSX (Review Data) tidak berubah ---
+  // ... (Salin-tempel sisa JSX Anda dari file asli) ...
   return (
     <div className="space-y-6">
       <div className="space-y-4">
@@ -172,6 +218,20 @@ const Step6Verifikasi = ({ data, onPrev, onSubmitSuccess }: Props) => {
                 <span className="font-medium">{allData.pekerjaan_ibu || '-'}</span>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <h4 className="font-semibold mb-3 text-primary">Berkas Terpilih</h4>
+            <ul className="list-disc list-inside text-sm space-y-1">
+                <li>Pas Foto: {allData.foto?.name || 'Tidak ada'}</li>
+                <li>Akta Kelahiran: {allData.akta?.name || 'Tidak ada'}</li>
+                <li>Ijazah / SKL: {allData.ijazah?.name || 'Tidak ada'}</li>
+                <li>Kartu Keluarga: {allData.kk?.name || 'Tidak ada'}</li>
+                <li>KTP Ortu: {allData.ktp?.name || 'Tidak ada'}</li>
+                <li>Surat Pernyataan: {allData.surat?.name || 'Tidak ada'}</li>
+            </ul>
           </CardContent>
         </Card>
       </div>
