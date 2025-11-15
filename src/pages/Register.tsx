@@ -11,10 +11,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
+// HAPUS: import { useToast } from '@/hooks/use-toast';
+// GANTI DENGAN:
+import { toast } from 'sonner';
 import { pendaftaranService, InitialRegisterData } from '@/services/pendaftaranService';
 
-// Schema Validasi Sederhana
 const registerSchema = z.object({
   nama_lengkap: z.string().min(3, 'Nama minimal 3 karakter'),
   nisn: z.string().length(10, 'NISN harus 10 digit angka').regex(/^[0-9]+$/, 'NISN hanya boleh angka'),
@@ -27,7 +28,7 @@ const Register = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [submittedEmail, setSubmittedEmail] = useState('');
-  const { toast } = useToast();
+  // HAPUS: const { toast } = useToast();
 
   const { register, handleSubmit, formState: { errors } } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -36,19 +37,23 @@ const Register = () => {
   const onSubmit = async (data: RegisterFormData) => {
     setIsLoading(true);
     try {
-      // Kirim data ke backend (Hanya Nama, NISN, Email)
       await pendaftaranService.registerInitial(data as InitialRegisterData);
       
       setSubmittedEmail(data.email);
       setIsSubmitted(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
       
+      // Opsional: Toast sukses
+      toast.success('Registrasi Berhasil', {
+        description: 'Silakan cek email Anda untuk verifikasi.',
+      });
+      
     } catch (error: any) {
       console.error("Register error:", error);
       const msg = error.response?.data?.error || "Terjadi kesalahan saat mendaftar.";
-      toast({
-        variant: "destructive",
-        title: "Gagal Mendaftar",
+      
+      // GANTI DENGAN SONNER:
+      toast.error("Gagal Mendaftar", {
         description: msg,
       });
     } finally {
@@ -115,7 +120,6 @@ const Register = () => {
 
       <div className="flex-1 section-padding bg-gradient-to-br from-primary/5 via-background to-secondary/5 flex items-center">
         <div className="container-custom max-w-lg">
-          {/* Header Teks */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center p-3 bg-primary/10 rounded-full mb-4">
               <School className="w-8 h-8 text-primary" />
@@ -128,7 +132,6 @@ const Register = () => {
             </p>
           </div>
 
-          {/* Form Card */}
           <Card className="shadow-xl border-muted">
             <CardHeader>
               <CardTitle>Buat Akun</CardTitle>
