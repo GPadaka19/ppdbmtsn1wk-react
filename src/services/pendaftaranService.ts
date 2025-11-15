@@ -7,6 +7,9 @@ export interface InitialRegisterData {
 }
 
 export interface PendaftaranData {
+  nama_lengkap?: string; 
+  nisn?: string;
+  email?: string;
   // Step 1: Data Diri
   nik: string;
   tempat_lahir: string;
