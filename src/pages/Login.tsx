@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom'; // <-- Tambahkan useLocation
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -9,12 +9,11 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { authService } from '@/services/authService';
-import { Loader2, X } from 'lucide-react';
-import axios from 'axios'; // Anda sudah mengimpor ini untuk Lupa Password
+import { Loader2 } from 'lucide-react';
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Email tidak valid' }),
-  password: z.string().min(5, { message: 'Password minimal 5 karakter' }), // Sesuai file Anda
+  password: z.string().min(5, { message: 'Password minimal 5 karakter' }),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -32,27 +31,34 @@ const Login = () => {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
   });
 
-  // --- INI FUNGSI YANG DIPERBAIKI ---
+  useEffect(() => {
+    // Cek apakah ada email yang dikirim lewat state (dari VerifyEmail.tsx)
+    if (location.state?.email) {
+      // Set value input email
+      setValue('email', location.state.email);
+      // Hapus state agar tidak auto-fill saat refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, setValue]);
+
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
-      // 1. Panggil login. 'response' adalah objek LoginResponse
-      const response = await authService.login({
-        email: data.email, // tidak perlu '!'
-        password: data.password, // tidak perlu '!'
-      });
-
+      const response = await authService.login({ email: data.email, password: data.password });
       toast.success('Login berhasil!');
       
-      // 2. Cek 'from' state untuk redirect (jika ada)
       const from = location.state?.from?.pathname || null;
 
-      // 3. Redirect berdasarkan role
       if (response.role === 'admin' || response.role === 'superadmin') {
         navigate(from || '/admin/dashboard', { replace: true });
       } else { // (role === 'siswa')
@@ -60,10 +66,8 @@ const Login = () => {
       }
 
     } catch (error: any) {
-      // Tangani error dengan lebih baik
       const errMsg = error?.response?.data?.error || 'Periksa email dan password Anda.';
       
-      // Cek kode error "NOT_VERIFIED" dari backend
       if (error?.response?.data?.code === 'NOT_VERIFIED') {
         toast.warning(errMsg, {
           description: 'Silakan cek email Anda untuk link aktivasi.',
@@ -78,28 +82,19 @@ const Login = () => {
       setIsLoading(false);
     }
   };
-  // --- AKHIR FUNGSI PERBAIKAN ---
-
 
   const handleForgotSubmit = async (e: React.FormEvent) => {
-    // ... (Fungsi ini sepertinya belum diimplementasi di backend Anda, tapi biarkan saja) ...
     e.preventDefault();
     setForgotLoading(true);
     setForgotSuccess(false);
     setForgotError('');
     try {
-      // Anda perlu endpoint /api/auth/check-email dan /api/auth/forgot-password
-      // const checkRes = await axios.post('/api/auth/check-email', { email: forgotEmail });
-      // if (!checkRes.data?.exists) {
-      //   setForgotError('Email tidak ditemukan di sistem.');
-      //   setForgotLoading(false);
-      //   return;
-      // }
-      // await axios.post('/api/auth/forgot-password', { email: forgotEmail });
+      // TODO: Implementasi BE Lupa Password
+      // await authService.forgotPassword(forgotEmail);
       setForgotSuccess(true);
       setForgotError('Fitur Lupa Password belum diimplementasikan.'); // Placeholder
     } catch (err:any) {
-      setForgotError('Terjadi kesalahan. Coba beberapa saat lagi.');
+      setForgotError(err.response?.data?.error || 'Email tidak ditemukan.');
     } finally {
       setForgotLoading(false);
     }
@@ -165,11 +160,12 @@ const Login = () => {
               Lupa password?
             </button>
           </div>
+          
           {/* Lupa Password Modal */}
           {showForgot && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
               <div className="bg-white rounded-md p-6 w-full max-w-sm shadow-xl relative">
-                <button onClick={() => setShowForgot(false)} className="absolute right-3 top-2 text-xl" aria-label="Tutup">×</button>
+                <button onClick={() => setShowForgot(false)} className="absolute right-3 top-2 text-xl" aria-label="Tutup">&times;</button>
                 <h4 className="font-bold mb-3 text-lg text-primary">Reset Password</h4>
                 <form className="space-y-3" onSubmit={handleForgotSubmit}>
                   <div className="space-y-1">
