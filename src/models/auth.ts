@@ -15,4 +15,5 @@ export interface LoginRequest {
   export interface VerifyEmailResponse {
     message: string;
     password: string;
+    email: string;
   }
