@@ -4,7 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { PendaftaranData } from '@/services/pendaftaranService';
-import { UploadCloud } from 'lucide-react';
+import { UploadCloud, FileCheck, AlertCircle } from 'lucide-react';
+import { toast } from 'sonner'; // Pastikan import ini ada
 
 interface Props {
   data: Partial<PendaftaranData>;
@@ -12,20 +13,49 @@ interface Props {
   onPrev: () => void;
 }
 
+// Konstanta Ukuran Maksimal (2MB dalam bytes)
+const MAX_FILE_SIZE = 2 * 1024 * 1024; 
+
 const Step5Berkas = ({ data, onNext, onPrev }: Props) => {
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm<Partial<PendaftaranData>>({
-    defaultValues: {
-    }
+  const { handleSubmit, setValue, watch } = useForm<Partial<PendaftaranData>>({
+    defaultValues: data
   });
+  
+  // (Opsional) Untuk melihat file apa saja yang sudah masuk (buat validasi UI jika perlu)
+  // const values = watch(); 
 
   const handleFileChange = (key: keyof PendaftaranData) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    
     if (file) {
+      // --- VALIDASI UKURAN ---
+      if (file.size > MAX_FILE_SIZE) {
+        // 1. Beri notifikasi error
+        toast.error("File Terlalu Besar", {
+          description: `File "${file.name}" melebihi batas 2MB. Harap kompres file Anda.`
+        });
+
+        // 2. Reset input agar terlihat kosong kembali
+        e.target.value = ''; 
+        
+        // 3. Hapus value di form state (jika sebelumnya ada)
+        setValue(key, undefined); 
+        
+        return; // Berhenti di sini, jangan lanjut simpan
+      }
+      // -----------------------
+
       setValue(key, file);
+      toast.success("File dipilih", {
+        description: `${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`
+      });
     }
   };
 
   const onSubmit = (formData: Partial<PendaftaranData>) => {
+    // Validasi akhir sebelum next (opsional, pastikan file wajib ada)
+    // Contoh: if (!formData.foto) { toast.error("Foto wajib diupload"); return; }
+    
     onNext(formData);
   };
 
@@ -64,15 +94,15 @@ const Step5Berkas = ({ data, onNext, onPrev }: Props) => {
 };
 
 const FileItem = ({ label, id, onChange }: { label: string, id: string, onChange: any }) => (
-  <Card>
+  <Card className="hover:border-primary/50 transition-colors">
     <CardContent className="pt-6">
-      <Label htmlFor={id} className="mb-2 block">{label}</Label>
+      <Label htmlFor={id} className="mb-2 block font-medium text-sm text-muted-foreground">{label}</Label>
       <Input 
         id={id} 
         type="file" 
         accept=".jpg,.jpeg,.png,.pdf"
         onChange={onChange}
-        className="cursor-pointer file:text-primary file:font-medium"
+        className="cursor-pointer file:text-primary file:font-medium file:bg-primary/10 file:rounded-md file:px-2 file:mr-2 hover:file:bg-primary/20 transition-all"
       />
     </CardContent>
   </Card>
