@@ -94,10 +94,21 @@ const Dashboard = () => {
 
   const handleSubmitSuccess = async () => {
     try {
-        // 1. Simpan Data Teks (Step 1-4)
-        await pendaftaranService.updateDataLengkap(formData as PendaftaranData);
+        // --- PERBAIKAN BUG 1: PISAHKAN DATA TEKS DAN FILE ---
+        // 1. Buat salinan data teks
+        const textData = { ...formData };
         
-        // 2. Upload Berkas (Step 5) jika ada
+        // 2. Hapus kunci file dari data teks
+        // Ini SANGAT PENTING agar file tidak dikirim sebagai JSON
+        const fileKeys: (keyof PendaftaranData)[] = ['foto', 'akta', 'ijazah', 'kk', 'ktp', 'surat'];
+        for (const key of fileKeys) {
+            delete textData[key];
+        }
+
+        // 3. Simpan Data Teks (Step 1-4)
+        await pendaftaranService.updateDataLengkap(textData as PendaftaranData);
+        
+        // 4. Siapkan data file
         const filesToUpload: Partial<PendaftaranData> = {
           foto: formData.foto,
           akta: formData.akta,
@@ -106,14 +117,17 @@ const Dashboard = () => {
           ktp: formData.ktp,
           surat: formData.surat
         };
+        // --- AKHIR PERBAIKAN BUG 1 ---
 
         // Cek apakah user memilih file untuk diupload
         const hasFiles = Object.values(filesToUpload).some(f => f instanceof File);
         
         if (hasFiles) {
             // Gunakan ID Siswa dari profil yang didapat saat fetchProfil
-            if (profil?.id) {
-                await pendaftaranService.uploadBerkas(profil.id, filesToUpload);
+            // (Asumsi `getProfil` mengembalikan `id` dari tabel siswa)
+            const siswaId = profil?.id; 
+            if (siswaId) {
+                await pendaftaranService.uploadBerkas(siswaId, filesToUpload);
             } else {
                 toast.warning("Gagal Upload Berkas", {
                   description: "ID Siswa tidak ditemukan. Data teks tersimpan, silakan coba upload ulang.",
@@ -134,6 +148,8 @@ const Dashboard = () => {
         toast.error("Gagal Menyimpan", {
           description: err.message || "Terjadi kesalahan saat menyimpan data.",
         });
+        // JANGAN reset loading jika gagal, agar user bisa coba lagi
+        throw err; // Lempar error agar Step6 tahu prosesnya gagal
     }
   };
 
