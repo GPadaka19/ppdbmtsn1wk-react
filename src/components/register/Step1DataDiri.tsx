@@ -44,7 +44,12 @@ const schema = z.object({
       }
       return age <= 15;
     }, { message: 'Umur maksimal 15 tahun pada tanggal 1 Juli tahun ini' }),
-  jenis_kelamin: z.enum(['L', 'P'], { required_error: 'Jenis kelamin wajib dipilih' }),
+    jenis_kelamin: z.preprocess(
+      (val) => (val === '' ? undefined : val), // Jika string kosong, anggap 'undefined'
+      z.enum(['L', 'P'], { 
+        required_error: 'Jenis kelamin wajib dipilih' // Sekarang error ini akan muncul
+      })
+    ),
   agama: z.string({ required_error: 'Agama wajib diisi' }).min(1, 'Agama wajib diisi'),
   
   anak_ke: z.preprocess(

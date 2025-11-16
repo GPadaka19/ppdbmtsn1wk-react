@@ -251,7 +251,17 @@ const Dashboard = () => {
                       </div>
                       <div className="grid grid-cols-3 gap-2">
                           <span className="text-muted-foreground">TTL</span>
-                          <span className="col-span-2 font-medium">: {profil?.tempat_lahir}, {profil?.tanggal_lahir}</span>
+                          <span className="col-span-2 font-medium">
+                            : {profil?.tempat_lahir}, {profil?.tanggal_lahir ? profil.tanggal_lahir.split('-').reverse().join('-') : '-'}
+                          </span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                          <span className="text-muted-foreground">Jenis Kelamin</span>
+                          <span className="col-span-2 font-medium">: {profil?.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'}</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                          <span className="text-muted-foreground">Agama</span>
+                          <span className="col-span-2 font-medium">: {profil?.agama}</span>
                       </div>
                   </CardContent>
               </Card>
