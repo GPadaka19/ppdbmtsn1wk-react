@@ -89,12 +89,17 @@ const Login = () => {
     setForgotSuccess(false);
     setForgotError('');
     try {
-      // TODO: Implementasi BE Lupa Password
-      // await authService.forgotPassword(forgotEmail);
-      setForgotSuccess(true);
-      setForgotError('Fitur Lupa Password belum diimplementasikan.'); // Placeholder
-    } catch (err:any) {
-      setForgotError(err.response?.data?.error || 'Email tidak ditemukan.');
+      await authService.forgotPassword(forgotEmail); // Panggil service yang baru dibuat
+    
+    setForgotSuccess(true);
+    toast.success('Email Terkirim', {
+      description: 'Jika email terdaftar, link reset password telah dikirim.',
+    });
+    } catch (error: any) {
+      setForgotError(error?.response?.data?.error || 'Gagal mengirim email reset password');
+      toast.error('Gagal mengirim email reset password', {
+        description: error?.response?.data?.error || 'Gagal mengirim email reset password',
+      });
     } finally {
       setForgotLoading(false);
     }
