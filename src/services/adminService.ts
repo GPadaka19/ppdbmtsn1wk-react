@@ -43,6 +43,12 @@ export interface PendaftarDetail {
   status: string;
   keterangan?: string | null;
   tanggal_daftar: string;
+  foto_url?: string;
+  akta_kelahiran_url?: string;
+  ijazah_url?: string;
+  kartu_keluarga_url?: string;
+  ktp_ortu_url?: string;
+  surat_pernyataan_url?: string;
 }
 
 export interface DashboardStats {
