@@ -33,8 +33,7 @@ export const authService = {
       // Jika backend tidak mengirim data yang diharapkan
       throw new Error("Respons login tidak valid dari server.");
     }
-    // --- AKHIR PERBAIKAN ---
-
+    
     return result;
   },
 
@@ -84,6 +83,16 @@ export const authService = {
     } catch (error) {
       console.error('Email verification failed:', error);
       throw error; 
+    }
+  },
+
+  async forgotPassword(email: string): Promise<{ message: string }> {
+    try {
+      const response = await api.post('/auth/forgot-password', { email });
+      return response.data;
+    } catch (error) {
+      console.error('Forgot password request failed:', error);
+      throw error;
     }
   },
 };  
