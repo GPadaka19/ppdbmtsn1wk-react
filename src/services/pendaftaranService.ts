@@ -67,6 +67,14 @@ export interface PendaftaranData {
   kk?: File;
   ktp?: File;
   surat?: File;
+
+  // Tipe string URL saat data di-load dari server (getProfil)
+  foto_url?: string;
+  akta_kelahiran_url?: string;
+  ijazah_url?: string;
+  kartu_keluarga_url?: string;
+  ktp_ortu_url?: string;
+  surat_pernyataan_url?: string;
 }
 
 // Tipe data yang dikembalikan oleh API Pendaftaran
