@@ -1,7 +1,6 @@
 import Navigation from '@/components/layout/Navigation';
-import Footer from '@/components/layout/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, UserCheck, UserX, Clock, SquarePen, Eye, CheckCircle, Search, Filter, ChevronDown, ChevronLeft, ChevronRight, X, Loader2 } from 'lucide-react';
+import { Users, UserCheck, UserX, Clock, SquarePen, Eye, Search, Filter, ChevronDown, ChevronLeft, ChevronRight, X, Loader2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminService } from '@/services/adminService';

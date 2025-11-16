@@ -9,26 +9,75 @@ import { PendaftaranData } from '@/services/pendaftaranService';
 interface Props {
   data: Partial<PendaftaranData>; 
   onPrev: () => void;
-  onSubmitSuccess: () => void; 
+  onSubmitSuccess: () => Promise<void>; // Ubah agar bisa di-await
 }
+
+// Tentukan file apa saja yang wajib
+const REQUIRED_FILES: (keyof PendaftaranData)[] = [
+  'foto', 
+  'akta', 
+  'ijazah', 
+  'kk', 
+  'ktp', 
+  'surat'
+];
+
+const FILE_LABELS: Record<string, string> = {
+  foto: 'Pas Foto',
+  akta: 'Akta Kelahiran',
+  ijazah: 'Ijazah/SKL',
+  kk: 'Kartu Keluarga',
+  ktp: 'KTP Orang Tua',
+  surat: 'Surat Pernyataan'
+};
+
 
 const Step6Verifikasi = ({ data, onPrev, onSubmitSuccess }: Props) => {
   const [agreed, setAgreed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async () => {
+    // 1. Validasi Checkbox
     if (!agreed) {
       toast.warning("Peringatan", {
         description: "Harap setujui pernyataan terlebih dahulu.",
       });
       return;
     }
+
+    // --- PERBAIKAN BUG 2: VALIDASI FILE WAJIB ---
+    const missingFiles: string[] = [];
+    for (const key of REQUIRED_FILES) {
+      if (!data[key as keyof PendaftaranData]) {
+        missingFiles.push(FILE_LABELS[key]);
+      }
+    }
+
+    if (missingFiles.length > 0) {
+      toast.error("Berkas Belum Lengkap", {
+        description: `Harap kembali ke Step 5 dan upload file berikut: ${missingFiles.join(', ')}`,
+      });
+      return;
+    }
+    // --- AKHIR PERBAIKAN BUG 2 ---
     
     setIsLoading(true);
-    await onSubmitSuccess();
-    setIsLoading(false);
+    try {
+      await onSubmitSuccess();
+      // Jika sukses, Dashboard.tsx akan handle redirect/refresh
+      // Jika gagal, Dashboard.tsx akan melempar error
+    } catch (err) {
+      // Tangkap error dari Dashboard.tsx agar loading stop
+      console.error("Submit gagal:", err);
+      toast.error("Gagal Menyimpan", {
+        description: "Terjadi kesalahan. Silakan coba beberapa saat lagi."
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
+  // Helper untuk menampilkan Nama File & Ukuran
   const renderFile = (file: any) => {
     if (file && file instanceof File) {
       return (
@@ -39,14 +88,36 @@ const Step6Verifikasi = ({ data, onPrev, onSubmitSuccess }: Props) => {
         </div>
       );
     }
+    // Tampilkan error jika file wajib tapi tidak ada
     return <span className="text-red-500 flex items-center gap-1"><AlertCircle className="w-3 h-3"/> Belum dipilih</span>;
   };
 
   return (
     <div className="space-y-6">
+      
+      {/* --- CSS UNTUK ANIMASI TOMBOL --- */}
+      <style>
+        {`
+          @keyframes loading-slide {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+          }
+          .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: loading-slide 1.5s infinite linear;
+          }
+        `}
+      </style>
+
       <div className="space-y-4">
         <h3 className="font-bold text-lg">Ringkasan Data</h3>
         
+        {/* ... (Card Data Pribadi, Alamat, Sekolah, Ortu tidak berubah) ... */}
         <Card>
           <CardContent className="p-4">
             <h4 className="font-semibold mb-3 text-primary">Data Pribadi</h4>
@@ -110,34 +181,42 @@ const Step6Verifikasi = ({ data, onPrev, onSubmitSuccess }: Props) => {
             </CardContent>
         </Card>
 
-        {/* 5. BERKAS (MODIFIED: Show Filename) */}
+        {/* --- PERBAIKAN ISU KECIL A: Tambah 'Surat' & Rapikan UI --- */}
         <Card>
           <CardContent className="p-4">
             <h4 className="font-semibold mb-3 text-primary">Berkas yang akan diupload</h4>
             <div className="grid grid-cols-1 gap-2 text-sm">
-                <div className="flex items-center justify-between border-b pb-2">
+                
+                <div className="flex items-center justify-between border-b py-2">
                     <span className="text-muted-foreground w-32">Pas Foto:</span> 
                     {renderFile(data.foto)}
                 </div>
-                <div className="flex items-center justify-between border-b pb-2">
+                <div className="flex items-center justify-between border-b py-2">
                     <span className="text-muted-foreground w-32">Akta Kelahiran:</span> 
                     {renderFile(data.akta)}
                 </div>
-                <div className="flex items-center justify-between border-b pb-2">
+                <div className="flex items-center justify-between border-b py-2">
                     <span className="text-muted-foreground w-32">Ijazah/SKL:</span> 
                     {renderFile(data.ijazah)}
                 </div>
-                <div className="flex items-center justify-between border-b pb-2">
+                <div className="flex items-center justify-between border-b py-2">
                     <span className="text-muted-foreground w-32">Kartu Keluarga:</span> 
                     {renderFile(data.kk)}
                 </div>
-                <div className="flex items-center justify-between pt-2">
+                <div className="flex items-center justify-between border-b py-2">
                     <span className="text-muted-foreground w-32">KTP Orang Tua:</span> 
                     {renderFile(data.ktp)}
                 </div>
+                <div className="flex items-center justify-between pt-2">
+                    <span className="text-muted-foreground w-32">Surat Pernyataan:</span> 
+                    {renderFile(data.surat)}
+                </div>
+
             </div>
           </CardContent>
         </Card>
+        {/* --- AKHIR PERBAIKAN ISU KECIL A --- */}
+
       </div>
 
       <div className="flex items-start gap-3 p-4 border border-border rounded-lg bg-muted/20">
@@ -153,14 +232,28 @@ const Step6Verifikasi = ({ data, onPrev, onSubmitSuccess }: Props) => {
         <Button type="button" variant="outline" onClick={onPrev} disabled={isLoading}>
           Kembali
         </Button>
+
+        {/* TOMBOL SIMPAN DENGAN VISUAL LOADING */}
         <Button 
           type="button" 
           onClick={handleSubmit} 
-          className="btn-primary min-w-[150px]" 
+          className="btn-primary min-w-[200px] relative overflow-hidden transition-all" 
           disabled={isLoading || !agreed}
         >
-          {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-          Simpan Permanen
+          {isLoading && (
+            <div className="loading-overlay" />
+          )}
+          
+          <span className="relative z-10 flex items-center gap-2">
+            {isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Sedang Menyimpan...
+              </>
+            ) : (
+              "Simpan Permanen"
+            )}
+          </span>
         </Button>
       </div>
     </div>
