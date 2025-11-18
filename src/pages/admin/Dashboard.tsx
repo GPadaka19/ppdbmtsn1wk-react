@@ -55,11 +55,25 @@ const DashboardAdmin = () => {
 
   const toggleStatusFilter = (value: string) => {
     setPage(1);
-    setStatusFilter((prev) =>
-      prev.includes(value)
-        ? prev.filter((v) => v !== value)
-        : [...prev, value]
-    );
+    setStatusFilter((prev) => {
+      if (value === 'all') {
+        return ['all'];
+      } else {
+        let newFilter = prev.filter((f) => f !== 'all');
+
+        if (newFilter.includes(value)) {
+          newFilter = newFilter.filter((v) => v !== value);
+        } else {
+          newFilter = [...newFilter, value];
+        }
+
+        if (newFilter.length === 0) {
+          return ['all'];
+        }
+
+        return newFilter;
+      }
+    });
   };
 
   const renderStatusBadge = (status?: string) => {
@@ -99,7 +113,6 @@ const DashboardAdmin = () => {
 
   useEffect(() => {
     fetchRows();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter, page, limit]);
 
   useEffect(() => {
@@ -117,7 +130,6 @@ const DashboardAdmin = () => {
         const s = await adminService.getDashboardStats();
         setSummary(s || summary);
       } catch {
-        // keep defaults
       } finally {
         setSummaryLoading(false);
       }
@@ -152,7 +164,6 @@ const DashboardAdmin = () => {
             ))}
           </div>
 
-          {/* Search & Filter */}
           <div className="bg-card rounded-2xl border border-border shadow-sm p-6 mt-8">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-semibold">Filter Pencarian</h2>
@@ -255,7 +266,6 @@ const DashboardAdmin = () => {
             </div>
           </div>
 
-          {/* Table (summary fields only) */}
           <div className="mt-6 bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -302,7 +312,6 @@ const DashboardAdmin = () => {
               </table>
             </div>
 
-            {/* Pagination */}
             <div className="flex items-center justify-between p-4 border-t border-border">
               <div className="text-sm text-muted-foreground">
                 Menampilkan {rows.length === 0 ? 0 : (page - 1) * limit + 1}–{(page - 1) * limit + rows.length} dari {total}
@@ -328,7 +337,6 @@ const DashboardAdmin = () => {
           </div>
         </div>
       </div>
-      {/* <Footer /> */}
     </div>
   );
 };
